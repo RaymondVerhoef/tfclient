@@ -1,0 +1,111 @@
+{
+    "references": [
+        {
+            "referenceId": "38970",
+            "name": "DOCUMENT REFERENCE 2",
+            "value": "CHANGED to 4"
+        },
+        {
+            "name": "ADDED DOCUMENT REFERENCE 3",
+            "value": "1"
+        }
+    ],
+    "type": "WAYBILL",
+    "consignor": {
+        "roleId": "174344",
+        "name": "V. Erzender",
+        "streetName": "Verzenderstraat",
+        "buildingNumber": "1",
+        "postalCode": "1234AA",
+        "postalBox": "1234",
+        "cityName": "Nootdorp",
+        "countryName": "Netherlands",
+        "countryCode": "NLD",
+        "contactName": "C. Onsignor",
+        "contactNote": "Notitie voor consignor contact",
+        "contactEmailAddress": "frankmob+contact_consignor@gmail.com",
+        "contactPhoneNumber": "0123456789",
+        "accountId": "126603",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+consignor@gmail.com"
+    },
+    "consignee": {
+        "roleId": "174343",
+        "name": "O. Ntvanger",
+        "streetName": "Ontvangerstraat",
+        "buildingNumber": "2",
+        "postalCode": "5678AA",
+        "postalBox": "5678",
+        "cityName": "Utrecht",
+        "countryName": "Netherlands",
+        "countryCode": "NLD",
+        "contactName": "C Onsignee",
+        "contactNote": "Notitie voor consignee contact",
+        "contactEmailAddress": "frankmob+consignee_contact@gmail.com",
+        "contactPhoneNumber": "0987654321",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+consignee@gmail.com"
+    },
+    "carrier": {
+        "roleId": "174345",
+        "name": "V. Ervoerder",
+        "streetName": "Vervoerderdreef",
+        "buildingNumber": "3",
+        "postalCode": "9012AA",
+        "postalBox": "9012",
+        "cityName": "Wijk bij Duurstede",
+        "countryName": "Netherlands",
+        "countryCode": "NLD",
+        "contactName": "C. Arrier",
+        "contactNote": "Notitie voor carrier contact",
+        "contactEmailAddress": "frankmob+carrier_contact@gmail.com",
+        "contactPhoneNumber": "0123443212",
+        "accountId": "126613",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+carrier@gmail.com"
+    },
+    "submitterName": "frankmob+submitter",
+    "carrierCode": "NEW CODE",
+    "agreedDateOfTakingOver": "2015-08-22",
+    "estimatedDateTimeOfTakingOver": "2015-08-22T16:33:00Z",
+    "estimatedDateTimeOfDelivery": "2015-08-23T16:33:00Z",
+    "establishedDate": "2015-08-21",
+    "establishedPlace": "CHANGED Established Place",
+    "reimbursementCurrency": "USD",
+    "reimbursementAmount": 2.2,
+    "paymentForCarriage": "CARRIAGE_PAID",
+    "goods": "CHANGED Goods",
+    "senderInstructions": "CHANGED Sender Instructions",
+    "specialAgreements": "CHANGED Special Agreements",
+    "transportConditions": "AVC2002",
+    "attachments": [
+        {
+            "attachmentId": "8991",
+            "name": "attachments/img.png",
+            "mimeType": "image/png",
+            "originalFileName": "/Users/Frank/Projects/Go/src/github.com/frankkeiren/tfclient/attachments/attachments/img.png",
+            "content": "",
+            "sealed": false,
+            "type": "GENERAL",
+            "size": 283602
+        }
+    ],
+    "approvals": [],
+    "updates": [],
+    "subsequentCarriers": [ {
+        "name": "O. Pvolgend - Vervoerder",
+        "streetName": "Vervoerderdreef",
+        "buildingNumber": "3",
+        "postalCode": "9012AA",
+        "postalBox": "9012",
+        "cityName": "Wijk bij Duurstede",
+        "countryName": "Netherlands",
+        "countryCode": "NLD",
+        "contactName": "C. Arrier",
+        "contactNote": "Notitie voor carrier contact",
+        "contactEmailAddress": "frankmob+carrier_contact@gmail.com",
+        "contactPhoneNumber": "0123443212",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+subsequent_carrier_1@gmail.com"
+    }]
+}

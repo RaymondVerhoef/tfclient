@@ -1,0 +1,53 @@
+{
+"steps": [
+    {
+      "action": "createaccount",
+      "url": "",
+      "obj": "submitter",
+      "file": "templates/create_account.json",
+      "parms": ""
+    },
+    {
+      "action": "login",
+      "url": "",
+      "obj": "submitter",
+      "file": "",
+      "parms": ""
+    },
+    {
+      "action": "createaccount",
+      "url": "",
+      "obj": "carrier",
+      "file": "templates/create_account.json",
+      "parms": ""
+    },
+    {
+      "action": "createfd",
+      "url": "/freightdocuments",
+      "obj": "",
+      "file": "templates/create_fd.json",
+      "parms": ""
+    },
+    {
+      "action": "login",
+      "url": "",
+      "obj": "carrier",
+      "file": "",
+      "parms": ""
+    },	
+    {
+      "action": "delegatefd",
+      "url": "/freightdocuments/{{id}}/delegate",
+      "obj": "",
+      "file": "templates/delegate_fd.json",
+      "parms": ""
+    },	
+    {
+      "action": "delegatefd",
+      "url": "/freightdocuments/{{id}}/revoke",
+      "obj": "",
+      "file": "templates/delegate_fd.json",
+      "parms": ""
+    }
+  ]
+}

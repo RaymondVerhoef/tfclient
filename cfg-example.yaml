@@ -1,0 +1,63 @@
+httplog: true
+test: 
+  api: 
+    host: "test.transfollow.com/v1/api"
+  portal: 
+    host: "test.transfollow.com/portal"
+  client: 
+    id: "my id"
+    secret: "my secret"
+acceptance: 
+  api: 
+    host: "acceptance.transfollow.com/v1/api"
+  portal: 
+    host: "acceptance.transfollow.com/portal"
+  client: 
+    id: "my id"
+    secret: "my secret"
+partner: 
+  api: 
+    host: "partner.transfollow.com/v1/api"
+  portal: 
+    host: "partner.transfollow.com/portal"
+  client: 
+    id: "my id"
+    secret: "my secret"
+accounts: 
+  submitter: 
+    name: "submitter"
+    email: "submitter@gmail.com"
+    password: "my password"
+  consignor: 
+    name: "consignor"
+    email: "consignor@gmail.com"
+    password: "my password"
+  consignee: 
+    name: "consignee"
+    email: "consignee@gmail.com"
+    password: "my password"
+  carrier: 
+    name: "carrier"
+    email: "carrier@gmail.com"
+    password: "my password"
+  delegate_consignor: 
+    name: "delegate_consignor"
+    email: "delegate_consignor@gmail.com"
+    password: "my password"
+  delegate_consignee: 
+    name: "delegate_consignee"
+    email: "delegate_consignee@gmail.com"
+    password: "my password"
+  delegate_carrier: 
+    name: "delegate_carrier"
+    email: "delegate_carrier@gmail.com"
+    password: "my password"
+  subsequent_carriers: 
+    - 
+      name: "subsequent_carrier_1"
+      email: "subsequent_carrier_1@gmail.com"
+      password: "my password"
+    - 
+      name: "subsequent_carrier_2"
+      email: "subsequent_carrier_2@gmail.com"
+      password: "password"

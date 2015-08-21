@@ -1,0 +1,7 @@
+{
+    "name": "{{name}}",
+    "acceptTermsAndConditions": true,
+    "email": "{{email}}",
+    "phoneNumber": "0123456789",
+    "password": "{{password}}"
+}

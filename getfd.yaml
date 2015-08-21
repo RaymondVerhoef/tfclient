@@ -1,0 +1,27 @@
+currentfd: 19629
+steps:
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+  - 
+    action: issuefd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}/issue"
+  - 
+    action: updatefd
+    file: templates/update_fd.json
+    obj: ""
+    parms: '{"attachments":[{"file":"img.JPG","name":"",
+	  "content":"","type":"GENERAL","sealed":false}]}'
+    url: /freightdocuments/{{id}}	
