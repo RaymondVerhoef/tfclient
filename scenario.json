@@ -26,7 +26,8 @@
       "url": "/freightdocuments",
       "obj": "",
       "file": "templates/create_fd.json",
-      "parms": ""
+      "parms": {"attachments":[{"name":"attachments/img.png","originalFileName":"",
+	  "content":"","type":"GENERAL","sealed":false}]}
     },
     {
       "action": "login",

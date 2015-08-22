@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -47,11 +48,14 @@ type Action struct {
 	Url    string
 }
 type Attachment struct {
-	Name    string `json:"originalFileName"`
-	Content string `json:"content"`
-	Sealed  bool   `json:"sealed"`
-	Type    string `json:"type"`
-	File    string `json:"name"`
+	AttachmentID     string `json:"attachmentId"`
+	Content          string `json:"content"`
+	MimeType         string `json:"mimeType"`
+	Name             string `json:"name"`
+	OriginalFileName string `json:"originalFileName"`
+	Sealed           bool   `json:"sealed"`
+	Size             int    `json:"size"`
+	Type             string `json:"type"`
 }
 type Login struct {
 	AccessToken   string `json:"access_token"`
@@ -72,6 +76,7 @@ type Account struct {
 	PhoneNumber string `json:"phoneNumber"`
 }
 type Role struct {
+	AccountID                    string `json:"accountId"`
 	BuildingNumber               string `json:"buildingNumber"`
 	CityName                     string `json:"cityName"`
 	ContactEmailAddress          string `json:"contactEmailAddress"`
@@ -81,9 +86,9 @@ type Role struct {
 	CountryCode                  string `json:"countryCode"`
 	CountryName                  string `json:"countryName"`
 	Name                         string `json:"name"`
-	Password                     string `json:"password"`
 	PostalBox                    string `json:"postalBox"`
 	PostalCode                   string `json:"postalCode"`
+	RoleID                       string `json:"roleId"`
 	StreetName                   string `json:"streetName"`
 	SubmittedAccountEmailAddress string `json:"submittedAccountEmailAddress"`
 	SubmittedAccountNumber       string `json:"submittedAccountNumber"`
@@ -198,10 +203,19 @@ func login(account Account, refreshtoken string) int {
 		for k, v := range req.Header {
 			fmt.Println(k+":", v)
 		}
-		fmt.Println(reqbody.Encode())
+		reqbodystr := reqbody.Encode()
+		if len(reqbodystr) > 0 {
+			fmt.Println(" ")
+			fmt.Println(reqbodystr)
+		}
+
 		fmt.Println("RESPONSE")
 		fmt.Println("Status", resp.StatusCode)
-		fmt.Println(string(resbytes))
+		if len(string(resbytes)) > 0 {
+			fmt.Println(" ")
+			fmt.Println(string(resbytes))
+		}
+
 	}
 	if status == 200 {
 		jsonerr := json.Unmarshal(resbytes, &currentlogin)
@@ -229,9 +243,9 @@ func login(account Account, refreshtoken string) int {
 
 func createAccount(filename string, acc Account) (int, []byte, string) {
 
-	cfg_string, err := ioutil.ReadFile(filename)
+	template, err := ioutil.ReadFile(filename)
 	check(err)
-	cfg_str := strings.TrimSpace(string(cfg_string))
+	cfg_str := strings.TrimSpace(string(template))
 	reqbody := strings.Replace(cfg_str, "{{name}}", acc.Name, -1)
 	reqbody = strings.Replace(reqbody, "{{email}}", acc.Email, -1)
 	reqbody = strings.Replace(reqbody, "{{password}}", acc.Password, -1)
@@ -283,10 +297,18 @@ func callApi(method string, url string, auth string, reqbody string) (int, []byt
 		for k, v := range req.Header {
 			fmt.Println(k+":", v)
 		}
-		fmt.Println(reqbody)
+
+		if len(reqbody) > 0 {
+			fmt.Println(" ")
+			fmt.Println(reqbody)
+		}
+
 		fmt.Println("RESPONSE")
 		fmt.Println("Status", resp.StatusCode)
-		fmt.Println(string(resbytes))
+		if len(string(resbytes)) > 0 {
+			fmt.Println(" ")
+			fmt.Println(string(resbytes))
+		}
 	}
 
 	elapsed := time.Since(start)
@@ -446,9 +468,9 @@ func main() {
 				fmt.Printf("%s %s with file %s (parms %s subj %s)\n", method, action.Url, action.File, action.Parms, action.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				cfg_string, err := ioutil.ReadFile(action.File)
+				template, err := ioutil.ReadFile(action.File)
 				check(err)
-				reqbody := strings.TrimSpace(string(cfg_string))
+				reqbody := strings.TrimSpace(string(template))
 				now := time.Now()
 				reqbody = strings.Replace(reqbody, "{{ed}}", now.Format(datelo), 1)
 				reqbody = strings.Replace(reqbody, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
@@ -467,19 +489,19 @@ func main() {
 						var attachment Attachment
 						err = fillStruct(attmap.(map[string]interface{}), &attachment)
 						check(err)
-						f, err := os.Open(attachment.File)
+						f, err := os.Open(attachment.Name)
 						if err == nil {
 							f.Close()
-							data, err := ioutil.ReadFile(attachment.File)
+							data, err := ioutil.ReadFile(attachment.Name)
 							check(err)
 							attachment.Content = b64.StdEncoding.EncodeToString(data)
-							attachment.Name, err = filepath.Abs(filepath.Dir(attachment.File))
-							attachment.Name = attachment.Name + "/" + attachment.File
-
+							attachment.OriginalFileName, err = filepath.Abs(filepath.Dir(attachment.Name))
+							_, attachment.Name = path.Split(attachment.Name)
+							attachment.OriginalFileName = attachment.OriginalFileName + "/" + attachment.Name
 							attachments = append(attachments, attachment)
 							i++
 						} else {
-							fmt.Println("Could not find", attachment.File)
+							fmt.Println("Could not find", attachment.Name)
 						}
 					}
 
@@ -520,9 +542,9 @@ func main() {
 				fmt.Println("-----------------------------------------------------------------")
 
 				if len(currentfd) > 0 {
-					cfg_string, err := ioutil.ReadFile(action.File)
+					template, err := ioutil.ReadFile(action.File)
 					check(err)
-					reqbody := strings.TrimSpace(string(cfg_string))
+					reqbody := strings.TrimSpace(string(template))
 
 					status, resbytes, timelog = doCall("POST", action.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 					if status >= 400 {

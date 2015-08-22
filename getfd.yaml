@@ -1,4 +1,4 @@
-currentfd: 19629
+currentfd: 19632
 steps:
   - 
     action: login
@@ -13,15 +13,9 @@ steps:
     parms: ""
     url: "/freightdocuments/{{id}}"
   - 
-    action: issuefd
-    file: ""
-    obj: ""
-    parms: ""
-    url: "/freightdocuments/{{id}}/issue"
-  - 
     action: updatefd
     file: templates/update_fd.json
     obj: ""
-    parms: '{"attachments":[{"file":"img.JPG","name":"",
-	  "content":"","type":"GENERAL","sealed":false}]}'
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
+	  "content":"","type":"GENERAL","sealed":true}]}'
     url: /freightdocuments/{{id}}	

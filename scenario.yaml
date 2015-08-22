@@ -21,7 +21,7 @@ steps:
     action: createfd
     file: templates/create_fd.json
     obj: ""
-    parms: '{"attachments":[{"file":"img.JPG","name":"",
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
 	  "content":"","type":"GENERAL","sealed":false}]}'
     url: /freightdocuments
   - 
