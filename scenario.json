@@ -27,7 +27,7 @@
       "obj": "",
       "file": "templates/create_fd.json",
       "parms": {"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":false}]}
+	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"DOCUMENT REFERENCE 3","value":"3"}]}
     },
     {
       "action": "login",

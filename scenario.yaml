@@ -22,7 +22,7 @@ steps:
     file: templates/create_fd.json
     obj: ""
     parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":false}]}'
+	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"DOCUMENT REFERENCE 3","value":"3"}]}'
     url: /freightdocuments
   - 
     action: login

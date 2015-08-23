@@ -58,6 +58,11 @@ type Attachment struct {
 	Size             int    `json:"size"`
 	Type             string `json:"type"`
 }
+type Reference struct {
+	ReferenceId string `json:"referenceId"`
+	Name        string `json:"name"`
+	Value       string `json:"value"`
+}
 type Login struct {
 	AccessToken   string `json:"access_token"`
 	AccountId     string `json:"accountId"`
@@ -95,7 +100,6 @@ type Role struct {
 	SubmittedAccountNumber       string `json:"submittedAccountNumber"`
 }
 
-var errors Errs
 var currentlogin Login
 var submitter Account
 var consignor Account
@@ -104,6 +108,7 @@ var carrier Account
 var delconsignor Account
 var delconsignee Account
 var delcarrier Account
+var subscarriers []Account
 
 func check(e error) {
 	if e != nil {
@@ -165,6 +170,7 @@ func fillStruct(m map[string]interface{}, s interface{}) error {
 }
 
 func login(account Account, refreshtoken string) int {
+	var errors Errs
 	if refreshtoken == "" && (account.Name == "" || account.Password == "") {
 		return 800
 	}
@@ -236,7 +242,9 @@ func login(account Account, refreshtoken string) int {
 	} else if status >= 400 {
 		jsonerr := json.Unmarshal(resbytes, &errors)
 		check(jsonerr)
-		fmt.Println("Errors:", errors.Errors[0].Code, errors.Errors[0].Field, errors.Errors[0].Description)
+		for _, ers := range errors.Errors {
+			fmt.Println("Error:", ers.Code, ers.Field, ers.Description)
+		}
 	}
 
 	return status
@@ -319,40 +327,18 @@ func callApi(method string, url string, auth string, reqbody string) (int, []byt
 }
 
 func doCall(method string, url string, auth string, reqbody string) (int, []byte, string) {
+	var errors Errs
 	status, resbytes, timelog := callApi(method, url, auth, reqbody)
 
 	if status >= 400 {
 		jsonerr := json.Unmarshal(resbytes, &errors)
 		check(jsonerr)
-		fmt.Println("Errors:", errors.Errors[0].Code, errors.Errors[0].Field, errors.Errors[0].Description)
+		for _, ers := range errors.Errors {
+			fmt.Println("Error:", ers.Code, ers.Field, ers.Description)
+		}
 	}
 
 	return status, resbytes, timelog
-}
-
-func makeArrayOfAttachmentStructs(jsonstr []byte, atts []Attachment) {
-	var f interface{}
-	err := json.Unmarshal(jsonstr, &f)
-	if err == nil {
-		m := f.(map[string]interface{})
-		for k, v := range m {
-			switch vv := v.(type) {
-			case []interface{}:
-				if k == "attachments" {
-					for _, u := range vv {
-						var att Attachment
-						err = fillStruct(u.(map[string]interface{}), &att)
-						check(err)
-						atts = append(atts, att)
-					}
-				}
-			default:
-				fmt.Println(k, "does not contain an array")
-			}
-		}
-	} else {
-		panic(err)
-	}
 }
 
 func makeAccountStruct(cfg *config.Config, account string, structure *Account) {
@@ -483,6 +469,7 @@ func main() {
 
 			case action.Action == "createfd" || action.Action == "updatefd":
 				var oldattachments []Attachment
+				var oldreferences []Reference
 				var method = "PUT"
 				if action.Action == "createfd" {
 					method = "POST"
@@ -509,6 +496,7 @@ func main() {
 					var req *config.Config
 					req, err = parseConfigString(reqbody)
 					check(err)
+
 					oldatts, _ := req.Get("attachments")
 					for _, attmap := range oldatts.Root.([]interface{}) {
 						var attachment Attachment
@@ -516,16 +504,24 @@ func main() {
 						check(err)
 						oldattachments = append(oldattachments, attachment)
 					}
+
+					oldrefs, _ := req.Get("references")
+					for _, refmap := range oldrefs.Root.([]interface{}) {
+						var reference Reference
+						err = fillStruct(refmap.(map[string]interface{}), &reference)
+						check(err)
+						oldreferences = append(oldreferences, reference)
+					}
 				}
 
 				if len(action.Parms) > 0 {
 					var i int = 0
-					var attcfg *config.Config
-					attcfg, err := parseConfigString(action.Parms)
-					atts, _ := attcfg.Get("attachments")
+					var parmscfg *config.Config
+					parmscfg, err := parseConfigString(action.Parms)
 					check(err)
 
 					var attachments []Attachment
+					atts, _ := parmscfg.Get("attachments")
 					for _, attmap := range atts.Root.([]interface{}) {
 						var attachment Attachment
 						err = fillStruct(attmap.(map[string]interface{}), &attachment)
@@ -545,14 +541,30 @@ func main() {
 							fmt.Println("Could not find", attachment.Name)
 						}
 					}
+					var references []Reference
+					refs, _ := parmscfg.Get("references")
+					for _, refmap := range refs.Root.([]interface{}) {
+						var reference Reference
+						err = fillStruct(refmap.(map[string]interface{}), &reference)
+						check(err)
+						references = append(references, reference)
+					}
+
 					if action.Action == "updatefd" {
 						oldattachments = append(oldattachments, attachments...)
+						oldreferences = append(oldreferences, references...)
 					}
-					json, _ := json.Marshal(oldattachments)
 
-					if string(json) != "null" {
+					jsonb, _ := json.Marshal(oldattachments)
+					if string(jsonb) != "null" {
 						r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
-						reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(json))
+						reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(jsonb))
+					}
+
+					jsonb, _ = json.Marshal(oldreferences)
+					if string(jsonb) != "null" {
+						r := regexp.MustCompile(`"references": *(?s)(.*?)\[(.*?)\]`)
+						reqbody = r.ReplaceAllString(reqbody, "\"references\": "+string(jsonb))
 					}
 				}
 
