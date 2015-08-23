@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -48,7 +49,7 @@ type Action struct {
 	Url    string
 }
 type Attachment struct {
-	AttachmentID     string `json:"attachmentId"`
+	AttachmentId     string `json:"attachmentId"`
 	Content          string `json:"content"`
 	MimeType         string `json:"mimeType"`
 	Name             string `json:"name"`
@@ -59,7 +60,7 @@ type Attachment struct {
 }
 type Login struct {
 	AccessToken   string `json:"access_token"`
-	AccountID     string `json:"accountId"`
+	AccountId     string `json:"accountId"`
 	AccountNumber string `json:"accountNumber"`
 	AccountSecret string `json:"accountSecret"`
 	Credits       int    `json:"credits"`
@@ -69,14 +70,14 @@ type Login struct {
 	RefreshToken  string `json:"refresh_token"`
 }
 type Account struct {
-	AccountID   string `json:"accountId"`
+	AccountId   string `json:"accountId"`
 	Email       string `json:"email"`
 	Name        string `json:"name"`
 	Password    string `json:"password"`
 	PhoneNumber string `json:"phoneNumber"`
 }
 type Role struct {
-	AccountID                    string `json:"accountId"`
+	AccountId                    string `json:"accountId"`
 	BuildingNumber               string `json:"buildingNumber"`
 	CityName                     string `json:"cityName"`
 	ContactEmailAddress          string `json:"contactEmailAddress"`
@@ -329,6 +330,31 @@ func doCall(method string, url string, auth string, reqbody string) (int, []byte
 	return status, resbytes, timelog
 }
 
+func makeArrayOfAttachmentStructs(jsonstr []byte, atts []Attachment) {
+	var f interface{}
+	err := json.Unmarshal(jsonstr, &f)
+	if err == nil {
+		m := f.(map[string]interface{})
+		for k, v := range m {
+			switch vv := v.(type) {
+			case []interface{}:
+				if k == "attachments" {
+					for _, u := range vv {
+						var att Attachment
+						err = fillStruct(u.(map[string]interface{}), &att)
+						check(err)
+						atts = append(atts, att)
+					}
+				}
+			default:
+				fmt.Println(k, "does not contain an array")
+			}
+		}
+	} else {
+		panic(err)
+	}
+}
+
 func makeAccountStruct(cfg *config.Config, account string, structure *Account) {
 	accountmap, err := cfg.Map("accounts." + account)
 	check(err)
@@ -456,6 +482,7 @@ func main() {
 				log.Printf("%s with status %d", timelog, status)
 
 			case action.Action == "createfd" || action.Action == "updatefd":
+				var oldattachments []Attachment
 				var method = "PUT"
 				if action.Action == "createfd" {
 					method = "POST"
@@ -471,11 +498,25 @@ func main() {
 				template, err := ioutil.ReadFile(action.File)
 				check(err)
 				reqbody := strings.TrimSpace(string(template))
+				//parseConfigString chokes on null values
+				reqbody = strings.Replace(reqbody, ": null", ": \"~null~\"", -1)
 				now := time.Now()
 				reqbody = strings.Replace(reqbody, "{{ed}}", now.Format(datelo), 1)
 				reqbody = strings.Replace(reqbody, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
 				reqbody = strings.Replace(reqbody, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
 				reqbody = strings.Replace(reqbody, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
+				if action.Action == "updatefd" {
+					var req *config.Config
+					req, err = parseConfigString(reqbody)
+					check(err)
+					oldatts, _ := req.Get("attachments")
+					for _, attmap := range oldatts.Root.([]interface{}) {
+						var attachment Attachment
+						err = fillStruct(attmap.(map[string]interface{}), &attachment)
+						check(err)
+						oldattachments = append(oldattachments, attachment)
+					}
+				}
 
 				if len(action.Parms) > 0 {
 					var i int = 0
@@ -504,18 +545,18 @@ func main() {
 							fmt.Println("Could not find", attachment.Name)
 						}
 					}
-
-					json, _ := json.Marshal(attachments)
-					if string(json) != "null" {
-						reqbody = strings.Replace(reqbody, "\"{{attachments}}\"", string(json), 1)
-					} else {
-						reqbody = strings.Replace(reqbody, "\"{{attachments}}\"", "[]", 1)
+					if action.Action == "updatefd" {
+						oldattachments = append(oldattachments, attachments...)
 					}
+					json, _ := json.Marshal(oldattachments)
 
-				} else {
-					reqbody = strings.Replace(reqbody, "\"{{attachments}}\"", "[]", 1)
+					if string(json) != "null" {
+						r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
+						reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(json))
+					}
 				}
 
+				reqbody = strings.Replace(reqbody, ": \"~null~\"", ": null", -1)
 				status, resbytes, timelog = doCall(method, action.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 				if status == 201 {
 					result, err := config.ParseJson(string(resbytes))

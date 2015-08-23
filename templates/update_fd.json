@@ -38,7 +38,7 @@
             "mimeType": "image/png",
             "originalFileName": "/Users/Frank/Projects/Go/src/github.com/frankkeiren/tfclient/attachments/img.png",
             "content": "",
-            "sealed": true,
+            "sealed": false,
             "type": "GENERAL",
             "size": 283602
         }

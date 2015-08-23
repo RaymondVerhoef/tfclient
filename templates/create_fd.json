@@ -72,6 +72,6 @@
   "senderInstructions": "Sender Instructions",
   "specialAgreements": "Special Agreements",
   "transportConditions": "AVC2002",
-  "attachments": "{{attachments}}",
+  "attachments": [],
   "status": "DRAFT"
 }
