@@ -41,7 +41,7 @@ type Errs struct {
 		Description string `json:"description"`
 	} `json:"errors"`
 }
-type Action struct {
+type Step struct {
 	File   string
 	Parms  string
 	Obj    string
@@ -98,6 +98,19 @@ type Role struct {
 	StreetName                   string `json:"streetName"`
 	SubmittedAccountEmailAddress string `json:"submittedAccountEmailAddress"`
 	SubmittedAccountNumber       string `json:"submittedAccountNumber"`
+}
+type Comment struct {
+	Attachments []struct {
+		Content          string `json:"content"`
+		Name             string `json:"name"`
+		OriginalFileName string `json:"originalFileName"`
+		Sealed           bool   `json:"sealed"`
+		Type             string `json:"type"`
+	} `json:"attachments"`
+	ClientMeta           string        `json:"clientMeta"`
+	PreviousCommits      []interface{} `json:"previousCommits"`
+	SecondsSinceCreation int           `json:"secondsSinceCreation"`
+	Text                 string        `json:"text"`
 }
 
 var currentlogin Login
@@ -236,7 +249,9 @@ func login(account Account, refreshtoken string) int {
 			} else if status >= 400 {
 				jsonerr := json.Unmarshal(resbytes, &errors)
 				check(jsonerr)
-				fmt.Println("Endpoint ./me error:", errors.Errors[0].Code, errors.Errors[0].Field, errors.Errors[0].Description)
+				for _, ers := range errors.Errors {
+					fmt.Println("Error:", ers.Code, ers.Field, ers.Description)
+				}
 			}
 		}
 	} else if status >= 400 {
@@ -348,6 +363,40 @@ func makeAccountStruct(cfg *config.Config, account string, structure *Account) {
 	check(err)
 }
 
+func makeAttachmentsSlice(atts *config.Config) []Attachment {
+	var attachments []Attachment
+	for _, attmap := range atts.Root.([]interface{}) {
+		var attachment Attachment
+		err := fillStruct(attmap.(map[string]interface{}), &attachment)
+		check(err)
+		f, err := os.Open(attachment.Name)
+		if err == nil {
+			f.Close()
+			data, err := ioutil.ReadFile(attachment.Name)
+			check(err)
+			attachment.Content = b64.StdEncoding.EncodeToString(data)
+			attachment.OriginalFileName, err = filepath.Abs(filepath.Dir(attachment.Name))
+			_, attachment.Name = path.Split(attachment.Name)
+			attachment.OriginalFileName = attachment.OriginalFileName + "/" + attachment.Name
+			attachments = append(attachments, attachment)
+		} else {
+			fmt.Println("Could not find", attachment.Name)
+		}
+	}
+	return attachments
+}
+
+func makeReferencesSlice(refs *config.Config) []Reference {
+	var references []Reference
+	for _, refmap := range refs.Root.([]interface{}) {
+		var reference Reference
+		err := fillStruct(refmap.(map[string]interface{}), &reference)
+		check(err)
+		references = append(references, reference)
+	}
+	return references
+}
+
 func parseConfigString(cfg_str string) (*config.Config, error) {
 	var err error
 	var cfg *config.Config
@@ -424,30 +473,31 @@ func main() {
 		currentfd, err = stepcfg.String("currentfd")
 
 	StepLoop:
-		for i, actionmap := range steps.Root.([]interface{}) {
+		for i, stepmap := range steps.Root.([]interface{}) {
 
-			var action Action
-			err = fillStruct(actionmap.(map[string]interface{}), &action)
+			var step Step
+			err = fillStruct(stepmap.(map[string]interface{}), &step)
 			check(err)
 
 			switch {
 
-			case action.Action == "getfd":
+			case step.Action == "getfd":
 				if len(currentfd) > 0 {
-					action.Url = strings.Replace(action.Url, "{{id}}", currentfd, 1)
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
 				}
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
-				fmt.Printf("GET %s \n", action.Url)
+				fmt.Printf("GET %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
 
-				status, resbytes, timelog = doCall("GET", action.Url, "Bearer "+currentlogin.AccessToken, "")
+				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
 				if status == 200 {
 					resp := strings.Replace(string(resbytes), ":null", ":\"\"", -1)
 					result, err := config.ParseJson(resp)
 					check(err)
 					currentfd, err = result.String("freightDocumentId")
-					previouscommits, _ = result.List("previousCommits")
+					check(err)
+					previouscommits, err = result.List("previousCommits")
 					check(err)
 					if len(currentfd) > 0 {
 						fmt.Printf("FD %s with PC %s\n", currentfd, previouscommits)
@@ -455,34 +505,34 @@ func main() {
 				}
 				log.Printf("%s with status %d", timelog, status)
 
-			case action.Action == "issuefd":
+			case step.Action == "issuefd":
 				if len(currentfd) > 0 {
-					action.Url = strings.Replace(action.Url, "{{id}}", currentfd, 1)
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
 				}
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
-				fmt.Printf("POST %s \n", action.Url)
+				fmt.Printf("POST %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
 
-				status, resbytes, timelog = doCall("POST", action.Url, "Bearer "+currentlogin.AccessToken, "")
+				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, "")
 				log.Printf("%s with status %d", timelog, status)
 
-			case action.Action == "createfd" || action.Action == "updatefd":
+			case step.Action == "createfd" || step.Action == "updatefd":
 				var oldattachments []Attachment
 				var oldreferences []Reference
 				var method = "PUT"
-				if action.Action == "createfd" {
+				if step.Action == "createfd" {
 					method = "POST"
 				} else {
-					action.Url = strings.Replace(action.Url, "{{id}}", currentfd, 1)
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
 				}
 
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
-				fmt.Printf("%s %s with file %s (parms %s subj %s)\n", method, action.Url, action.File, action.Parms, action.Obj)
+				fmt.Printf("%s %s with file %s (parms %s subj %s)\n", method, step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				template, err := ioutil.ReadFile(action.File)
+				template, err := ioutil.ReadFile(step.File)
 				check(err)
 				reqbody := strings.TrimSpace(string(template))
 				//parseConfigString chokes on null values
@@ -492,76 +542,40 @@ func main() {
 				reqbody = strings.Replace(reqbody, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
 				reqbody = strings.Replace(reqbody, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
 				reqbody = strings.Replace(reqbody, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
-				if action.Action == "updatefd" {
+				if step.Action == "updatefd" {
 					var req *config.Config
 					req, err = parseConfigString(reqbody)
 					check(err)
 
 					oldatts, _ := req.Get("attachments")
-					for _, attmap := range oldatts.Root.([]interface{}) {
-						var attachment Attachment
-						err = fillStruct(attmap.(map[string]interface{}), &attachment)
-						check(err)
-						oldattachments = append(oldattachments, attachment)
-					}
+					oldattachments = makeAttachmentsSlice(oldatts)
 
 					oldrefs, _ := req.Get("references")
-					for _, refmap := range oldrefs.Root.([]interface{}) {
-						var reference Reference
-						err = fillStruct(refmap.(map[string]interface{}), &reference)
-						check(err)
-						oldreferences = append(oldreferences, reference)
-					}
+					oldreferences = makeReferencesSlice(oldrefs)
 				}
 
-				if len(action.Parms) > 0 {
-					var i int = 0
+				if len(step.Parms) > 0 {
 					var parmscfg *config.Config
-					parmscfg, err := parseConfigString(action.Parms)
+					parmscfg, err := parseConfigString(step.Parms)
 					check(err)
 
-					var attachments []Attachment
 					atts, _ := parmscfg.Get("attachments")
-					for _, attmap := range atts.Root.([]interface{}) {
-						var attachment Attachment
-						err = fillStruct(attmap.(map[string]interface{}), &attachment)
-						check(err)
-						f, err := os.Open(attachment.Name)
-						if err == nil {
-							f.Close()
-							data, err := ioutil.ReadFile(attachment.Name)
-							check(err)
-							attachment.Content = b64.StdEncoding.EncodeToString(data)
-							attachment.OriginalFileName, err = filepath.Abs(filepath.Dir(attachment.Name))
-							_, attachment.Name = path.Split(attachment.Name)
-							attachment.OriginalFileName = attachment.OriginalFileName + "/" + attachment.Name
-							attachments = append(attachments, attachment)
-							i++
-						} else {
-							fmt.Println("Could not find", attachment.Name)
-						}
-					}
-					var references []Reference
+					attachments := makeAttachmentsSlice(atts)
 					refs, _ := parmscfg.Get("references")
-					for _, refmap := range refs.Root.([]interface{}) {
-						var reference Reference
-						err = fillStruct(refmap.(map[string]interface{}), &reference)
-						check(err)
-						references = append(references, reference)
+					references := makeReferencesSlice(refs)
+
+					if step.Action == "updatefd" {
+						attachments = append(oldattachments, attachments...)
+						references = append(oldreferences, references...)
 					}
 
-					if action.Action == "updatefd" {
-						oldattachments = append(oldattachments, attachments...)
-						oldreferences = append(oldreferences, references...)
-					}
-
-					jsonb, _ := json.Marshal(oldattachments)
+					jsonb, _ := json.Marshal(attachments)
 					if string(jsonb) != "null" {
 						r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
 						reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(jsonb))
 					}
 
-					jsonb, _ = json.Marshal(oldreferences)
+					jsonb, _ = json.Marshal(references)
 					if string(jsonb) != "null" {
 						r := regexp.MustCompile(`"references": *(?s)(.*?)\[(.*?)\]`)
 						reqbody = r.ReplaceAllString(reqbody, "\"references\": "+string(jsonb))
@@ -569,7 +583,7 @@ func main() {
 				}
 
 				reqbody = strings.Replace(reqbody, ": \"~null~\"", ": null", -1)
-				status, resbytes, timelog = doCall(method, action.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+				status, resbytes, timelog = doCall(method, step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 				if status == 201 {
 					result, err := config.ParseJson(string(resbytes))
 					check(err)
@@ -585,21 +599,21 @@ func main() {
 				}
 				log.Printf("%s with status %d", timelog, status)
 
-			case action.Action == "delegatefd":
+			case step.Action == "delegatefd":
 				if len(currentfd) > 0 {
-					action.Url = strings.Replace(action.Url, "{{id}}", currentfd, 1)
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
 				}
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
-				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", action.Url, action.File, action.Parms, action.Obj)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
 				if len(currentfd) > 0 {
-					template, err := ioutil.ReadFile(action.File)
+					template, err := ioutil.ReadFile(step.File)
 					check(err)
 					reqbody := strings.TrimSpace(string(template))
 
-					status, resbytes, timelog = doCall("POST", action.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 					if status >= 400 {
 						fmt.Println("%s", string(resbytes))
 					}
@@ -608,26 +622,72 @@ func main() {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
 				}
-			case action.Action == "login":
+
+			case step.Action == "createcomment":
+				if len(currentfd) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
+				}
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
-				fmt.Println("Log in as", action.Obj)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				if len(currentfd) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
+					if len(previouscommits) > 0 {
+						pc, err := json.Marshal(previouscommits)
+						check(err)
+						r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
+						reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
+					}
+
+					if len(step.Parms) > 0 {
+						var parmscfg *config.Config
+						parmscfg, err := parseConfigString(step.Parms)
+						check(err)
+
+						atts, _ := parmscfg.Get("attachments")
+						attachments := makeAttachmentsSlice(atts)
+
+						jsonb, _ := json.Marshal(attachments)
+						if string(jsonb) != "null" {
+							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
+							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(jsonb))
+						}
+					}
+
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+					if status >= 400 {
+						fmt.Println("%s", string(resbytes))
+					}
+					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("freightDocumentId is missing")
+					break StepLoop
+				}
+
+			case step.Action == "login":
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Println("Log in as", step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
 				switch {
-				case action.Obj == "submitter":
+				case step.Obj == "submitter":
 					account = &submitter
-				case action.Obj == "consignor":
+				case step.Obj == "consignor":
 					account = &consignor
-				case action.Obj == "consignee":
+				case step.Obj == "consignee":
 					account = &consignee
-				case action.Obj == "carrier":
+				case step.Obj == "carrier":
 					account = &carrier
-				case action.Obj == "delconsignor":
+				case step.Obj == "delconsignor":
 					account = &delconsignor
-				case action.Obj == "delconsignee":
+				case step.Obj == "delconsignee":
 					account = &delconsignee
-				case action.Obj == "delcarrier":
+				case step.Obj == "delcarrier":
 					account = &delcarrier
 				}
 				status = login(*account, "")
@@ -639,29 +699,29 @@ func main() {
 					break StepLoop
 				}
 
-			case action.Action == "createaccount":
+			case step.Action == "createaccount":
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
-				fmt.Printf("Creating account %s with file %s\n", action.Obj, action.File)
+				fmt.Printf("Creating account %s with file %s\n", step.Obj, step.File)
 				fmt.Println("-----------------------------------------------------------------")
 
 				switch {
-				case action.Obj == "submitter":
+				case step.Obj == "submitter":
 					account = &submitter
-				case action.Obj == "consignor":
+				case step.Obj == "consignor":
 					account = &consignor
-				case action.Obj == "consignee":
+				case step.Obj == "consignee":
 					account = &consignee
-				case action.Obj == "carrier":
+				case step.Obj == "carrier":
 					account = &carrier
-				case action.Obj == "delconsignor":
+				case step.Obj == "delconsignor":
 					account = &delconsignor
-				case action.Obj == "delconsignee":
+				case step.Obj == "delconsignee":
 					account = &delconsignee
-				case action.Obj == "delcarrier":
+				case step.Obj == "delcarrier":
 					account = &delcarrier
 				}
-				status, resbytes, timelog = createAccount(action.File, *account)
+				status, resbytes, timelog = createAccount(step.File, *account)
 				log.Printf("%s with status %d", timelog, status)
 			}
 
