@@ -1,0 +1,11 @@
+{
+    "location": {
+        "latitude": "34.00",
+        "longitude": "33.00"
+    },
+    "place": "city name",
+    "previousCommits": [],
+    "action": "{{transfer}}",
+    "secondsSinceCreation": 0,
+    "ownRole": "{{ownrole}}"
+}

@@ -1,0 +1,82 @@
+currentfd: 19632
+steps:
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+  - 
+    action: updatefd
+    file: templates/update_fd.json
+    obj: ""
+    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
+	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"ADDED DOCUMENT REFERENCE 4","value":"4"}]}'
+    url: /freightdocuments/{{id}}	
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: ""	
+  - 
+    action: createcomment
+    file: templates/create_comment.json
+    obj: ""
+    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
+	  "content":"","type":"REMARKS","sealed":false}]}'
+    url: /freightdocuments/{{id}}/comments
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"	
+  - 
+    action: submitmyapproval
+    file: templates/ownapproval.json
+    obj: COLLECTION
+    parms: CARRIER
+    url: "/freightdocuments/{{id}}/submitmyapproval"
+  - 
+    action: login
+    file: ""
+    obj: consignor
+    parms: ""
+    url: ""
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"		
+  - 
+    action: submitmyapproval
+    file: templates/ownapproval.json
+    obj: COLLECTION
+    parms: CONSIGNOR
+    url: "/freightdocuments/{{id}}/submitmyapproval"
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: ""	
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"		
+  - 
+    action: updatestatus
+    file: templates/statusupdate.json
+    obj: TRANSIT
+    parms: ""
+    url: "/freightdocuments/{{id}}/updatestatus"							

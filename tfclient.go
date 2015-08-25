@@ -369,18 +369,20 @@ func makeAttachmentsSlice(atts *config.Config) []Attachment {
 		var attachment Attachment
 		err := fillStruct(attmap.(map[string]interface{}), &attachment)
 		check(err)
-		f, err := os.Open(attachment.Name)
-		if err == nil {
-			f.Close()
-			data, err := ioutil.ReadFile(attachment.Name)
-			check(err)
-			attachment.Content = b64.StdEncoding.EncodeToString(data)
-			attachment.OriginalFileName, err = filepath.Abs(filepath.Dir(attachment.Name))
-			_, attachment.Name = path.Split(attachment.Name)
-			attachment.OriginalFileName = attachment.OriginalFileName + "/" + attachment.Name
-			attachments = append(attachments, attachment)
-		} else {
-			fmt.Println("Could not find", attachment.Name)
+		if len(attachment.MimeType) == 0 {
+			f, err := os.Open(attachment.Name)
+			if err == nil {
+				f.Close()
+				data, err := ioutil.ReadFile(attachment.Name)
+				check(err)
+				attachment.Content = b64.StdEncoding.EncodeToString(data)
+				attachment.OriginalFileName, err = filepath.Abs(filepath.Dir(attachment.Name))
+				_, attachment.Name = path.Split(attachment.Name)
+				attachment.OriginalFileName = attachment.OriginalFileName + "/" + attachment.Name
+				attachments = append(attachments, attachment)
+			} else {
+				fmt.Println("Could not find", attachment.Name)
+			}
 		}
 	}
 	return attachments
@@ -421,7 +423,8 @@ func main() {
 	var resbytes []byte
 	var timelog = ""
 
-	var account *Account
+	var currentaccount *Account
+	var currentfdid = ""
 	var currentfd = ""
 	var previouscommits []interface{}
 
@@ -470,7 +473,7 @@ func main() {
 		stepcfg, err := parseConfigString(step_str)
 		steps, _ := stepcfg.Get("steps")
 		check(err)
-		currentfd, err = stepcfg.String("currentfd")
+		currentfdid, err = stepcfg.String("currentfd")
 
 	StepLoop:
 		for i, stepmap := range steps.Root.([]interface{}) {
@@ -482,8 +485,8 @@ func main() {
 			switch {
 
 			case step.Action == "getfd":
-				if len(currentfd) > 0 {
-					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
 				}
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
@@ -492,22 +495,22 @@ func main() {
 
 				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
 				if status == 200 {
-					resp := strings.Replace(string(resbytes), ":null", ":\"\"", -1)
-					result, err := config.ParseJson(resp)
+					currentfd = strings.Replace(string(resbytes), ":null", ":\"\"", -1)
+					result, err := config.ParseJson(currentfd)
 					check(err)
-					currentfd, err = result.String("freightDocumentId")
+					currentfdid, err = result.String("freightDocumentId")
 					check(err)
 					previouscommits, err = result.List("previousCommits")
 					check(err)
-					if len(currentfd) > 0 {
-						fmt.Printf("FD %s with PC %s\n", currentfd, previouscommits)
+					if len(currentfdid) > 0 {
+						fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
 					}
 				}
 				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "issuefd":
-				if len(currentfd) > 0 {
-					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
 				}
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
@@ -518,105 +521,115 @@ func main() {
 				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "createfd" || step.Action == "updatefd":
+				var reqbody = ""
 				var oldattachments []Attachment
 				var oldreferences []Reference
 				var method = "PUT"
 				if step.Action == "createfd" {
 					method = "POST"
 				} else {
-					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
 				}
 
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
 				fmt.Printf("%s %s with file %s (parms %s subj %s)\n", method, step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
-
-				template, err := ioutil.ReadFile(step.File)
-				check(err)
-				reqbody := strings.TrimSpace(string(template))
-				//parseConfigString chokes on null values
-				reqbody = strings.Replace(reqbody, ": null", ": \"~null~\"", -1)
-				now := time.Now()
-				reqbody = strings.Replace(reqbody, "{{ed}}", now.Format(datelo), 1)
-				reqbody = strings.Replace(reqbody, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
-				reqbody = strings.Replace(reqbody, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
-				reqbody = strings.Replace(reqbody, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
-				if step.Action == "updatefd" {
-					var req *config.Config
-					req, err = parseConfigString(reqbody)
+				if len(step.File) > 0 {
+					template, err := ioutil.ReadFile(step.File)
 					check(err)
-
-					oldatts, _ := req.Get("attachments")
-					oldattachments = makeAttachmentsSlice(oldatts)
-
-					oldrefs, _ := req.Get("references")
-					oldreferences = makeReferencesSlice(oldrefs)
+					reqbody = strings.TrimSpace(string(template))
+					now := time.Now()
+					reqbody = strings.Replace(reqbody, "{{ed}}", now.Format(datelo), 1)
+					reqbody = strings.Replace(reqbody, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
+					reqbody = strings.Replace(reqbody, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
+					reqbody = strings.Replace(reqbody, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
+				} else {
+					reqbody = currentfd
 				}
 
-				if len(step.Parms) > 0 {
-					var parmscfg *config.Config
-					parmscfg, err := parseConfigString(step.Parms)
-					check(err)
-
-					atts, _ := parmscfg.Get("attachments")
-					attachments := makeAttachmentsSlice(atts)
-					refs, _ := parmscfg.Get("references")
-					references := makeReferencesSlice(refs)
+				if len(reqbody) > 0 {
+					//parseConfigString chokes on null values
+					reqbody = strings.Replace(reqbody, ": null", ":\"~null~\"", -1)
+					reqbody = strings.Replace(reqbody, ":null", ":\"~null~\"", -1)
 
 					if step.Action == "updatefd" {
-						attachments = append(oldattachments, attachments...)
-						references = append(oldreferences, references...)
+						var req *config.Config
+						req, err = parseConfigString(reqbody)
+						check(err)
+
+						oldatts, _ := req.Get("attachments")
+						oldattachments = makeAttachmentsSlice(oldatts)
+
+						oldrefs, _ := req.Get("references")
+						oldreferences = makeReferencesSlice(oldrefs)
 					}
 
-					jsonb, _ := json.Marshal(attachments)
-					if string(jsonb) != "null" {
-						r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
-						reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(jsonb))
+					if len(step.Parms) > 0 {
+						var parmscfg *config.Config
+						parmscfg, err := parseConfigString(step.Parms)
+						check(err)
+
+						atts, _ := parmscfg.Get("attachments")
+						attachments := makeAttachmentsSlice(atts)
+						refs, _ := parmscfg.Get("references")
+						references := makeReferencesSlice(refs)
+
+						if step.Action == "updatefd" {
+							attachments = append(oldattachments, attachments...)
+							references = append(oldreferences, references...)
+						}
+
+						jsonb, _ := json.Marshal(attachments)
+						if string(jsonb) != "null" {
+							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
+							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(jsonb))
+						}
+
+						jsonb, _ = json.Marshal(references)
+						if string(jsonb) != "null" {
+							r := regexp.MustCompile(`"references": *(?s)(.*?)\[(.*?)\]`)
+							reqbody = r.ReplaceAllString(reqbody, "\"references\": "+string(jsonb))
+						}
 					}
 
-					jsonb, _ = json.Marshal(references)
-					if string(jsonb) != "null" {
-						r := regexp.MustCompile(`"references": *(?s)(.*?)\[(.*?)\]`)
-						reqbody = r.ReplaceAllString(reqbody, "\"references\": "+string(jsonb))
+					reqbody = strings.Replace(reqbody, ":\"~null~\"", ":null", -1)
+					status, resbytes, timelog = doCall(method, step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+					if status == 201 {
+						result, err := config.ParseJson(string(resbytes))
+						check(err)
+						currentfdid, err = result.String("freightDocumentId")
+						check(err)
+						if len(currentfdid) > 0 {
+							fmt.Printf("new FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfdid)
+						}
+					} else if status == 205 {
+						if len(currentfdid) > 0 {
+							fmt.Printf("changed FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfdid)
+						}
 					}
+					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("freightDocument content is missing")
+					break StepLoop
 				}
-
-				reqbody = strings.Replace(reqbody, ": \"~null~\"", ": null", -1)
-				status, resbytes, timelog = doCall(method, step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
-				if status == 201 {
-					result, err := config.ParseJson(string(resbytes))
-					check(err)
-					currentfd, err = result.String("freightDocumentId")
-					check(err)
-					if len(currentfd) > 0 {
-						fmt.Printf("new FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfd)
-					}
-				} else if status == 205 {
-					if len(currentfd) > 0 {
-						fmt.Printf("changed FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfd)
-					}
-				}
-				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "delegatefd":
-				if len(currentfd) > 0 {
-					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
 				}
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfd) > 0 {
+				if len(currentfdid) > 0 {
 					template, err := ioutil.ReadFile(step.File)
 					check(err)
 					reqbody := strings.TrimSpace(string(template))
 
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
-					if status >= 400 {
-						fmt.Println("%s", string(resbytes))
-					}
+
 					log.Printf("%s with status %d", timelog, status)
 				} else {
 					fmt.Println("freightDocumentId is missing")
@@ -624,15 +637,15 @@ func main() {
 				}
 
 			case step.Action == "createcomment":
-				if len(currentfd) > 0 {
-					step.Url = strings.Replace(step.Url, "{{id}}", currentfd, 1)
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
 				}
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfd) > 0 {
+				if len(currentfdid) > 0 {
 					template, err := ioutil.ReadFile(step.File)
 					check(err)
 					reqbody := strings.TrimSpace(string(template))
@@ -659,10 +672,75 @@ func main() {
 					}
 
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
-					if status >= 400 {
-						fmt.Println("%s", string(resbytes))
-					}
+
 					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("freightDocumentId is missing")
+					break StepLoop
+				}
+
+			case step.Action == "submitmyapproval":
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				if len(currentfdid) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
+					if len(step.Parms) > 0 && len(step.Obj) > 0 {
+						reqbody = strings.Replace(reqbody, "{{ownrole}}", step.Parms, 1)
+						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
+						if len(previouscommits) > 0 {
+							pc, err := json.Marshal(previouscommits)
+							check(err)
+							r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
+							reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
+						}
+
+						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+
+						log.Printf("%s with status %d", timelog, status)
+					} else {
+						fmt.Println("Parms role and/or Obj transfer missing in scenario file")
+					}
+				} else {
+					fmt.Println("freightDocumentId is missing")
+					break StepLoop
+				}
+
+			case step.Action == "updatestatus":
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				if len(currentfdid) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
+					if len(step.Obj) > 0 {
+						reqbody = strings.Replace(reqbody, "{{newstatus}}", step.Obj, 1)
+						if len(previouscommits) > 0 {
+							pc, err := json.Marshal(previouscommits)
+							check(err)
+							r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
+							reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
+						}
+
+						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+
+						log.Printf("%s with status %d", timelog, status)
+					} else {
+						fmt.Println("Obj newstatus missing in scenario file")
+					}
 				} else {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
@@ -676,23 +754,23 @@ func main() {
 
 				switch {
 				case step.Obj == "submitter":
-					account = &submitter
+					currentaccount = &submitter
 				case step.Obj == "consignor":
-					account = &consignor
+					currentaccount = &consignor
 				case step.Obj == "consignee":
-					account = &consignee
+					currentaccount = &consignee
 				case step.Obj == "carrier":
-					account = &carrier
+					currentaccount = &carrier
 				case step.Obj == "delconsignor":
-					account = &delconsignor
+					currentaccount = &delconsignor
 				case step.Obj == "delconsignee":
-					account = &delconsignee
+					currentaccount = &delconsignee
 				case step.Obj == "delcarrier":
-					account = &delcarrier
+					currentaccount = &delcarrier
 				}
-				status = login(*account, "")
+				status = login(*currentaccount, "")
 				if status == 200 {
-					fmt.Println("Logged in as", account.Name)
+					fmt.Println("Logged in as", currentaccount.Name)
 				} else if status == 800 {
 					fmt.Println("No credentials found to log in with")
 				} else {
@@ -707,21 +785,21 @@ func main() {
 
 				switch {
 				case step.Obj == "submitter":
-					account = &submitter
+					currentaccount = &submitter
 				case step.Obj == "consignor":
-					account = &consignor
+					currentaccount = &consignor
 				case step.Obj == "consignee":
-					account = &consignee
+					currentaccount = &consignee
 				case step.Obj == "carrier":
-					account = &carrier
+					currentaccount = &carrier
 				case step.Obj == "delconsignor":
-					account = &delconsignor
+					currentaccount = &delconsignor
 				case step.Obj == "delconsignee":
-					account = &delconsignee
+					currentaccount = &delconsignee
 				case step.Obj == "delcarrier":
-					account = &delcarrier
+					currentaccount = &delcarrier
 				}
-				status, resbytes, timelog = createAccount(step.File, *account)
+				status, resbytes, timelog = createAccount(step.File, *currentaccount)
 				log.Printf("%s with status %d", timelog, status)
 			}
 

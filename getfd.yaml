@@ -20,15 +20,9 @@ steps:
 	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"ADDED DOCUMENT REFERENCE 4","value":"4"}]}'
     url: /freightdocuments/{{id}}	
   - 
-    action: login
+    action: getfd
     file: ""
-    obj: carrier
-    parms: ""
-    url: ""	
-  - 
-    action: createcomment
-    file: templates/create_comment.json
     obj: ""
-    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"REMARKS","sealed":false}]}'
-    url: /freightdocuments/{{id}}/comments		
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+	

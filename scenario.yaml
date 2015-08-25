@@ -25,6 +25,13 @@ steps:
 	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"DOCUMENT REFERENCE 3","value":"3"}]}'
     url: /freightdocuments
   - 
+    action: updatefd
+    file: templates/update_fd.json
+    obj: ""
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
+	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"ADDED DOCUMENT REFERENCE 4","value":"4"}]}'
+    url: /freightdocuments/{{id}}		
+  - 
     action: login
     file: ""
     obj: carrier
@@ -42,3 +49,10 @@ steps:
     obj: ""
     parms: ""
     url: "/freightdocuments/{{id}}/revoke"
+  - 
+    action: createcomment
+    file: templates/create_comment.json
+    obj: ""
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
+	  "content":"","type":"REMARKS","sealed":false}]}'
+    url: /freightdocuments/{{id}}/comments				
