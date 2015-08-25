@@ -1,0 +1,20 @@
+currentfd: 5590
+steps:
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: ""
+  - 
+    action: delegatefd
+    file: templates/delegate_fd.json
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}/delegate"
+  - 
+    action: delegatefd
+    file: templates/delegate_fd.json
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}/revoke"

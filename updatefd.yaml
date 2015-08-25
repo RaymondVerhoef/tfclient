@@ -1,0 +1,21 @@
+currentfd: 19632
+steps:
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+  - 
+    action: updatefd
+    file: templates/update_fd.json
+    obj: ""
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
+	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"ADDED DOCUMENT REFERENCE 4","value":"4"}]}'
+    url: /freightdocuments/{{id}}	
