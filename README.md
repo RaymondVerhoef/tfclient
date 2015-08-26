@@ -1,7 +1,5 @@
 
 # TransFollow command line client
-Demonstrates basic usage of the Nearby Connections API to establish a connection between two
-devices and send messages between them.
 
 ## Build
 This sample uses the GO build system for cross platform builds. 
