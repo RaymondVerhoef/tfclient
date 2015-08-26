@@ -615,6 +615,11 @@ func main() {
 					reqbody = strings.Replace(reqbody, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
 					reqbody = strings.Replace(reqbody, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
 					reqbody = strings.Replace(reqbody, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
+					var newfd *Fd
+					jsonerr := json.Unmarshal([]byte(reqbody), &newfd)
+					check(jsonerr)
+					newfdjson, _ := json.Marshal(newfd)
+					reqbody = string(newfdjson)
 				} else {
 					currentfdjson, _ := json.Marshal(currentfd)
 					reqbody = string(currentfdjson)

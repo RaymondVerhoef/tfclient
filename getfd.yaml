@@ -14,7 +14,7 @@ steps:
     url: "/freightdocuments/{{id}}"
   - 
     action: updatefd
-    file: ""
+    file: "templates/complete_fd.json"
     obj: ""
     parms: ''
     url: /freightdocuments/{{id}}	
