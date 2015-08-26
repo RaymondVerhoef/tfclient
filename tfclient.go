@@ -34,34 +34,19 @@ var clientsecret = ""
 var methods = []string{"POST", "PUT", "PATCH", "DELETE", "HEAD", "GET", "OPTIONS", "TRACE"}
 var nobody = []string{"HEAD", "GET", "OPTIONS", "TRACE"}
 
+type Account struct {
+	AccountId   string `json:"accountId"`
+	Email       string `json:"email"`
+	Name        string `json:"name"`
+	Password    string `json:"password"`
+	PhoneNumber string `json:"phoneNumber"`
+}
 type Errs struct {
 	Errors []struct {
 		Code        string `json:"code"`
 		Field       string `json:"field"`
 		Description string `json:"description"`
 	} `json:"errors"`
-}
-type Step struct {
-	File   string
-	Parms  string
-	Obj    string
-	Action string
-	Url    string
-}
-type Attachment struct {
-	AttachmentId     string `json:"attachmentId"`
-	Content          string `json:"content"`
-	MimeType         string `json:"mimeType"`
-	Name             string `json:"name"`
-	OriginalFileName string `json:"originalFileName"`
-	Sealed           bool   `json:"sealed"`
-	Size             int    `json:"size"`
-	Type             string `json:"type"`
-}
-type Reference struct {
-	ReferenceId string `json:"referenceId"`
-	Name        string `json:"name"`
-	Value       string `json:"value"`
 }
 type Login struct {
 	AccessToken   string `json:"access_token"`
@@ -74,12 +59,69 @@ type Login struct {
 	PhoneNumber   string `json:"phoneNumber"`
 	RefreshToken  string `json:"refresh_token"`
 }
-type Account struct {
-	AccountId   string `json:"accountId"`
-	Email       string `json:"email"`
+type Step struct {
+	File   string
+	Parms  string
+	Obj    string
+	Action string
+	Url    string
+}
+
+type Approval struct {
+	Action   string `json:"action"`
+	Evidence struct {
+		Attachments []struct {
+			Content          string `json:"content"`
+			MimeType         string `json:"mimeType"`
+			Name             string `json:"name"`
+			OriginalFileName string `json:"originalFileName"`
+		} `json:"attachments"`
+		ResponseCode    string `json:"responseCode"`
+		SignedOnGlassBy struct {
+			Email string `json:"email"`
+			Name  string `json:"name"`
+		} `json:"signedOnGlassBy"`
+	} `json:"evidence"`
+	Location struct {
+		Latitude  string `json:"latitude"`
+		Longitude string `json:"longitude"`
+	} `json:"location"`
+	OwnRole              string   `json:"ownRole"`
+	Place                string   `json:"place"`
+	PreviousCommits      []string `json:"previousCommits"`
+	SecondsSinceCreation int      `json:"secondsSinceCreation"`
+}
+type Attachment struct {
+	AttachmentId     string `json:"attachmentId"`
+	Content          string `json:"content"`
+	MimeType         string `json:"mimeType"`
+	Name             string `json:"name"`
+	OriginalFileName string `json:"originalFileName"`
+	Sealed           bool   `json:"sealed"`
+	Size             int    `json:"size"`
+	Type             string `json:"type"`
+}
+type Comment struct {
+	Attachments []struct {
+		Content          string `json:"content"`
+		Name             string `json:"name"`
+		OriginalFileName string `json:"originalFileName"`
+		Sealed           bool   `json:"sealed"`
+		Type             string `json:"type"`
+	} `json:"attachments"`
+	ClientMeta           string        `json:"clientMeta"`
+	PreviousCommits      []interface{} `json:"previousCommits"`
+	SecondsSinceCreation int           `json:"secondsSinceCreation"`
+	Text                 string        `json:"text"`
+}
+type OwnPermission struct {
+	Permissions []string `json:"permissions"`
+	Role        string   `json:"role"`
+}
+type Reference struct {
+	ReferenceId string `json:"referenceId"`
 	Name        string `json:"name"`
-	Password    string `json:"password"`
-	PhoneNumber string `json:"phoneNumber"`
+	Value       string `json:"value"`
 }
 type Role struct {
 	AccountId                    string `json:"accountId"`
@@ -99,18 +141,47 @@ type Role struct {
 	SubmittedAccountEmailAddress string `json:"submittedAccountEmailAddress"`
 	SubmittedAccountNumber       string `json:"submittedAccountNumber"`
 }
-type Comment struct {
-	Attachments []struct {
-		Content          string `json:"content"`
-		Name             string `json:"name"`
-		OriginalFileName string `json:"originalFileName"`
-		Sealed           bool   `json:"sealed"`
-		Type             string `json:"type"`
-	} `json:"attachments"`
-	ClientMeta           string        `json:"clientMeta"`
-	PreviousCommits      []interface{} `json:"previousCommits"`
-	SecondsSinceCreation int           `json:"secondsSinceCreation"`
-	Text                 string        `json:"text"`
+type Update struct {
+	NewFreightDocumentStatus string   `json:"newFreightDocumentStatus"`
+	PreviousCommits          []string `json:"previousCommits"`
+	SecondsSinceCreation     int      `json:"secondsSinceCreation"`
+}
+
+type Fd struct {
+	AgreedDateOfTakingOver        string          `json:"agreedDateOfTakingOver"`
+	Approvals                     []Approval      `json:"approvals"`
+	Attachments                   []Attachment    `json:"attachments"`
+	Carrier                       Role            `json:"carrier"`
+	CarrierCode                   string          `json:"carrierCode"`
+	Comments                      []Comment       `json:"comments"`
+	Consignee                     Role            `json:"consignee"`
+	Consignor                     Role            `json:"consignor"`
+	DeliveryDate                  string          `json:"deliveryDate"`
+	EstablishedDate               string          `json:"establishedDate"`
+	EstablishedPlace              string          `json:"establishedPlace"`
+	EstimatedDateTimeOfDelivery   string          `json:"estimatedDateTimeOfDelivery"`
+	EstimatedDateTimeOfTakingOver string          `json:"estimatedDateTimeOfTakingOver"`
+	FreightDocumentID             string          `json:"freightDocumentId"`
+	Goods                         string          `json:"goods"`
+	LastModifiedDateTime          string          `json:"lastModifiedDateTime"`
+	OwnPermissions                []OwnPermission `json:"ownPermissions"`
+	PaymentForCarriage            string          `json:"paymentForCarriage"`
+	PlaceOfDelivery               *Role           `json:"placeOfDelivery",omitempty`
+	PlaceOfTakingOver             *Role           `json:"placeOfTakingOver",omitempty`
+	PreviousCommits               []string        `json:"previousCommits"`
+	References                    []Reference     `json:"references"`
+	ReimbursementAmount           float64         `json:"reimbursementAmount"`
+	ReimbursementCurrency         string          `json:"reimbursementCurrency"`
+	SenderInstructions            string          `json:"senderInstructions"`
+	SpecialAgreements             string          `json:"specialAgreements"`
+	Status                        string          `json:"status"`
+	SubmitterAccountID            string          `json:"submitterAccountId"`
+	SubmitterName                 string          `json:"submitterName"`
+	SubsequentCarriers            []Role          `json:"subsequentCarriers"`
+	TransFollowNumber             string          `json:"transFollowNumber"`
+	TransportConditions           string          `json:"transportConditions"`
+	Type                          string          `json:"type"`
+	Updates                       []Update        `json:"updates"`
 }
 
 var currentlogin Login
@@ -425,8 +496,8 @@ func main() {
 
 	var currentaccount *Account
 	var currentfdid = ""
-	var currentfd = ""
-	var previouscommits []interface{}
+	var currentfd *Fd
+	var previouscommits []string
 
 	argsWithProg := os.Args
 	if len(argsWithProg) > 3 {
@@ -495,13 +566,13 @@ func main() {
 
 				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
 				if status == 200 {
-					currentfd = strings.Replace(string(resbytes), ":null", ":\"\"", -1)
-					result, err := config.ParseJson(currentfd)
-					check(err)
-					currentfdid, err = result.String("freightDocumentId")
-					check(err)
-					previouscommits, err = result.List("previousCommits")
-					check(err)
+					//currentfdjson := string(resbytes)
+
+					jsonerr := json.Unmarshal(resbytes, &currentfd)
+					check(jsonerr)
+					currentfdid = currentfd.FreightDocumentID
+					previouscommits = currentfd.PreviousCommits
+
 					if len(currentfdid) > 0 {
 						fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
 					}
@@ -545,10 +616,17 @@ func main() {
 					reqbody = strings.Replace(reqbody, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
 					reqbody = strings.Replace(reqbody, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
 				} else {
-					reqbody = currentfd
+					currentfdjson, _ := json.Marshal(currentfd)
+					reqbody = string(currentfdjson)
 				}
 
 				if len(reqbody) > 0 {
+
+					r := regexp.MustCompile(`"submitterAccountId": *(?s)(.*?)\"(.*?)\"`)
+					reqbody = r.ReplaceAllString(reqbody, "\"submitterAccountId\":null")
+					r = regexp.MustCompile(`"lastModifiedDateTime": *(?s)(.*?)\"(.*?)\"`)
+					reqbody = r.ReplaceAllString(reqbody, "\"lastModifiedDateTime\":null")
+
 					//parseConfigString chokes on null values
 					reqbody = strings.Replace(reqbody, ": null", ":\"~null~\"", -1)
 					reqbody = strings.Replace(reqbody, ":null", ":\"~null~\"", -1)

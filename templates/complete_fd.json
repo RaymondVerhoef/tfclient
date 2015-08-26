@@ -1,0 +1,227 @@
+{
+    "freightDocumentId": "19632",
+    "transFollowNumber": "000000019731",
+    "previousCommits": [
+        "48262"
+    ],
+    "references": [
+        {
+            "referenceId": "42790",
+            "name": "ADDED DOCUMENT REFERENCE 4",
+            "value": "4"
+        }
+    ],
+    "type": "WAYBILL",
+    "submitterAccountId": "126601",
+    "submitterName": "frankmob+submitter",
+    "carrierCode": "CHANGED",
+    "agreedDateOfTakingOver": "2016-08-23",
+    "estimatedDateTimeOfTakingOver": "2016-08-23T15:14:59Z",
+    "estimatedDateTimeOfDelivery": "2016-08-24T15:14:59Z",
+    "establishedDate": "2015-08-23",
+    "establishedPlace": "CHANGED Established Place",
+    "reimbursementCurrency": "USD",
+    "reimbursementAmount": 2.2,
+    "paymentForCarriage": "CARRIAGE_PAID",
+    "goods": "CHANGED Goods",
+    "senderInstructions": "CHANGED Sender Instructions",
+    "specialAgreements": "CHANGED Special Agreements",
+    "transportConditions": "AVC2002",
+    "attachments": [
+        {
+            "attachmentId": "9810",
+            "name": "img.png",
+            "mimeType": "image/png",
+            "originalFileName": "/Users/Frank/Projects/Go/src/github.com/frankkeiren/tfclient/attachments/img.png",
+            "content": "",
+            "sealed": true,
+            "type": "GENERAL",
+            "size": 0
+        }
+    ],
+    "comments": [
+        {
+            "previousCommits": [
+                "48262"
+            ],
+            "text": "comment text",
+            "clientMeta": "opaque client info",
+            "secondsSinceCreation": 0,
+            "attachments":[
+                {
+                    "attachmentId": "9810",
+                    "name": "img.png",
+                    "mimeType": "image/png",
+                    "originalFileName": "/Users/Frank/Projects/Go/src/github.com/frankkeiren/tfclient/attachments/img.png",
+                    "content": "",
+                    "sealed": false,
+                    "type": "REMARKS",
+                    "size": 0
+                }
+            ]
+        }
+    ],
+    "status": "DRAFT",
+    "ownPermissions": [
+        {
+            "role": "SUBMITTER",
+            "permissions": [
+                "UPDATE",
+                "DELEGATE",
+                "VIEW_SEALED_ATTACHMENT",
+                "VIEW"
+            ]
+        }
+    ],
+    "lastModifiedDateTime": "2015-08-25T20:49:33.819Z",
+    "approvals": [
+        {
+            "location": {
+                "latitude": "34.00",
+                "longitude": "33.00"
+            },
+            "place": "city name",
+            "previousCommits": [
+                "48262"
+            ],
+            "action": "COLLECTION",
+            "secondsSinceCreation": 0,
+            "ownRole": "CARRIER",
+            "evidence": {
+                "responseCode": "0000001234567890123456789",
+                "attachments": [
+                    {
+                        "name": "SOG scan of manual signature or emergency document",
+                        "mimeType": "image/jpeg",
+                        "originalFileName": "scan.jpg",
+                        "content": "base64 encoded content"
+                    }
+                ],
+                "signedOnGlassBy": {
+                    "name": "Approver",
+                    "email": "approver@example.com"
+                }                
+            }            
+        }
+    ],
+    "updates": [
+        {
+            "newFreightDocumentStatus": "TRANSFER",
+            "secondsSinceCreation": 0,
+            "previousCommits": [
+                "48262"
+            ]
+        }
+    ],
+    "deliveryDate": "2015-08-25",
+    "consignee": {
+        "roleId": "174359",
+        "name": "O. Ntvanger",
+        "streetName": "Ontvangerstraat",
+        "buildingNumber": "2",
+        "postalCode": "5678AA",
+        "postalBox": "5678",
+        "cityName": "Utrecht",
+        "countryName": "Netherlands",
+        "countryCode": "NLD",
+        "contactName": "C Onsignee",
+        "contactNote": "Notitie voor consignee contact",
+        "contactEmailAddress": "frankmob+consignee_contact@gmail.com",
+        "contactPhoneNumber": "0987654321",
+        "accountId": "120001",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+consignee@gmail.com"
+    },
+    "consignor": {
+        "roleId": "174360",
+        "name": "CHANGED V. Erzender",
+        "streetName": "CHANGED Verzenderstraat",
+        "buildingNumber": "CHANGED 1",
+        "postalCode": "0000AA",
+        "postalBox": "0000",
+        "cityName": "CHANGED Nootdorp",
+        "countryName": "CHANGED Netherlands",
+        "countryCode": "BEL",
+        "contactName": "CHANGED C. Onsignor",
+        "contactNote": "CHANGED Notitie voor consignor contact",
+        "contactEmailAddress": "frankmob+changed_contact_consignor@gmail.com",
+        "contactPhoneNumber": "0000000000",
+        "accountId": "126603",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+consignor@gmail.com"
+    },
+    "carrier": {
+        "roleId": "174361",
+        "name": "V. Ervoerder",
+        "streetName": "Vervoerderdreef",
+        "buildingNumber": "3",
+        "postalCode": "9012AA",
+        "postalBox": "9012",
+        "cityName": "Wijk bij Duurstede",
+        "countryName": "Netherlands",
+        "countryCode": "NLD",
+        "contactName": "C. Arrier",
+        "contactNote": "Notitie voor carrier contact",
+        "contactEmailAddress": "frankmob+carrier_contact@gmail.com",
+        "contactPhoneNumber": "0123443212",
+        "accountId": "126613",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+carrier@gmail.com"
+    },
+    "placeOfDelivery": {
+        "roleId": "174359",
+        "name": "O. Ntvanger",
+        "streetName": "Ontvangerstraat",
+        "buildingNumber": "2",
+        "postalCode": "5678AA",
+        "postalBox": "5678",
+        "cityName": "Utrecht",
+        "countryName": "Netherlands",
+        "countryCode": "NLD",
+        "contactName": "C Onsignee",
+        "contactNote": "Notitie voor consignee contact",
+        "contactEmailAddress": "frankmob+consignee_contact@gmail.com",
+        "contactPhoneNumber": "0987654321",
+        "accountId": "120001",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+consignee@gmail.com"
+    },
+    "placeOfTakingOver": {
+        "roleId": "174360",
+        "name": "CHANGED V. Erzender",
+        "streetName": "CHANGED Verzenderstraat",
+        "buildingNumber": "CHANGED 1",
+        "postalCode": "0000AA",
+        "postalBox": "0000",
+        "cityName": "CHANGED Nootdorp",
+        "countryName": "CHANGED Netherlands",
+        "countryCode": "BEL",
+        "contactName": "CHANGED C. Onsignor",
+        "contactNote": "CHANGED Notitie voor consignor contact",
+        "contactEmailAddress": "frankmob+changed_contact_consignor@gmail.com",
+        "contactPhoneNumber": "0000000000",
+        "accountId": "126603",
+        "submittedAccountNumber": "",
+        "submittedAccountEmailAddress": "frankmob+consignor@gmail.com"
+    },
+    "subsequentCarriers": [
+        {
+            "roleId": "174361",
+            "name": "V. ErvangendVervoerder",
+            "streetName": "Vervoerderdreef",
+            "buildingNumber": "3",
+            "postalCode": "9012AA",
+            "postalBox": "9012",
+            "cityName": "Wijk bij Duurstede",
+            "countryName": "Netherlands",
+            "countryCode": "NLD",
+            "contactName": "C. Arrier",
+            "contactNote": "Notitie voor carrier contact",
+            "contactEmailAddress": "frankmob+carrier_contact@gmail.com",
+            "contactPhoneNumber": "0123443212",
+            "accountId": "126613",
+            "submittedAccountNumber": "",
+            "submittedAccountEmailAddress": "frankmob+carrier@gmail.com"
+        }
+    ]
+}

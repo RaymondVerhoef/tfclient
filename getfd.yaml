@@ -14,10 +14,9 @@ steps:
     url: "/freightdocuments/{{id}}"
   - 
     action: updatefd
-    file: templates/update_fd.json
+    file: ""
     obj: ""
-    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"ADDED DOCUMENT REFERENCE 4","value":"4"}]}'
+    parms: ''
     url: /freightdocuments/{{id}}	
   - 
     action: getfd
