@@ -17,7 +17,7 @@ steps:
     file: templates/update_fd.json
     obj: ""
     parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"ADDED DOCUMENT REFERENCE 4","value":"4"}]}'
+	  "content":"","type":"GENERAL","sealed":true}]}'
     url: /freightdocuments/{{id}}	
   - 
     action: login

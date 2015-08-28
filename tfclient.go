@@ -91,6 +91,7 @@ type Approval struct {
 	PreviousCommits      []string `json:"previousCommits"`
 	SecondsSinceCreation int      `json:"secondsSinceCreation"`
 }
+
 type Attachment struct {
 	AttachmentId     string `json:"attachmentId"`
 	Content          string `json:"content"`
@@ -434,13 +435,18 @@ func makeAccountStruct(cfg *config.Config, account string, structure *Account) {
 	check(err)
 }
 
-func makeAttachmentsSlice(atts *config.Config) []Attachment {
+func makeNewAttachments(jsonstr string) []Attachment {
+	type Attachments struct {
+		Attachments []Attachment
+	}
+	var atts Attachments
+	jsonerr := json.Unmarshal([]byte(jsonstr), &atts)
+	check(jsonerr)
 	var attachments []Attachment
-	for _, attmap := range atts.Root.([]interface{}) {
-		var attachment Attachment
-		err := fillStruct(attmap.(map[string]interface{}), &attachment)
-		check(err)
-		if len(attachment.MimeType) == 0 {
+	for i, _ := range atts.Attachments {
+		// pointers to slice members prevent copies
+		attachment := &atts.Attachments[i]
+		if len(attachment.OriginalFileName) == 0 {
 			f, err := os.Open(attachment.Name)
 			if err == nil {
 				f.Close()
@@ -450,7 +456,7 @@ func makeAttachmentsSlice(atts *config.Config) []Attachment {
 				attachment.OriginalFileName, err = filepath.Abs(filepath.Dir(attachment.Name))
 				_, attachment.Name = path.Split(attachment.Name)
 				attachment.OriginalFileName = attachment.OriginalFileName + "/" + attachment.Name
-				attachments = append(attachments, attachment)
+				attachments = append(attachments, *attachment)
 			} else {
 				fmt.Println("Could not find", attachment.Name)
 			}
@@ -459,17 +465,33 @@ func makeAttachmentsSlice(atts *config.Config) []Attachment {
 	return attachments
 }
 
-func makeReferencesSlice(refs *config.Config) []Reference {
-	var references []Reference
-	for _, refmap := range refs.Root.([]interface{}) {
-		var reference Reference
-		err := fillStruct(refmap.(map[string]interface{}), &reference)
-		check(err)
-		references = append(references, reference)
+func combineAttachments(old []Attachment, new []Attachment) []Attachment {
+	var attachments []Attachment
+	for i, _ := range old {
+		// pointers to slice members prevent copies
+		oldatt := &old[i]
+		for j, _ := range new {
+			newatt := &new[j]
+			if newatt.AttachmentId == oldatt.AttachmentId {
+				if len(newatt.Content) > 0 {
+					oldatt.Content = newatt.Content
+				}
+				if len(newatt.Name) > 0 {
+					oldatt.Name = newatt.Name
+				}
+				if len(newatt.OriginalFileName) > 0 {
+					oldatt.OriginalFileName = newatt.OriginalFileName
+				}
+				oldatt.Sealed = newatt.Sealed
+				oldatt.Size = newatt.Size
+				attachments = append(attachments, *oldatt)
+			} else {
+				attachments = append(attachments, *newatt)
+			}
+		}
 	}
-	return references
+	return attachments
 }
-
 func parseConfigString(cfg_str string) (*config.Config, error) {
 	var err error
 	var cfg *config.Config
@@ -496,7 +518,7 @@ func main() {
 
 	var currentaccount *Account
 	var currentfdid = ""
-	var currentfd *Fd
+	var currentfd *Fd = nil
 	var previouscommits []string
 
 	argsWithProg := os.Args
@@ -566,8 +588,6 @@ func main() {
 
 				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
 				if status == 200 {
-					//currentfdjson := string(resbytes)
-
 					jsonerr := json.Unmarshal(resbytes, &currentfd)
 					check(jsonerr)
 					currentfdid = currentfd.FreightDocumentID
@@ -592,14 +612,16 @@ func main() {
 				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "createfd" || step.Action == "updatefd":
-				var reqbody = ""
+
 				var oldattachments []Attachment
-				var oldreferences []Reference
+				var newattachments []Attachment
 				var method = "PUT"
+
 				if step.Action == "createfd" {
 					method = "POST"
 				} else {
 					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+					oldattachments = currentfd.Attachments
 				}
 
 				fmt.Println("-----------------------------------------------------------------")
@@ -609,74 +631,31 @@ func main() {
 				if len(step.File) > 0 {
 					template, err := ioutil.ReadFile(step.File)
 					check(err)
-					reqbody = strings.TrimSpace(string(template))
+					templatestr := strings.TrimSpace(string(template))
 					now := time.Now()
-					reqbody = strings.Replace(reqbody, "{{ed}}", now.Format(datelo), 1)
-					reqbody = strings.Replace(reqbody, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
-					reqbody = strings.Replace(reqbody, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
-					reqbody = strings.Replace(reqbody, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
-					var newfd *Fd
-					jsonerr := json.Unmarshal([]byte(reqbody), &newfd)
+					templatestr = strings.Replace(templatestr, "{{ed}}", now.Format(datelo), 1)
+					templatestr = strings.Replace(templatestr, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
+					templatestr = strings.Replace(templatestr, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
+					templatestr = strings.Replace(templatestr, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
+					jsonerr := json.Unmarshal([]byte(templatestr), &currentfd)
+					oldattachments = combineAttachments(oldattachments, currentfd.Attachments)
 					check(jsonerr)
-					newfdjson, _ := json.Marshal(newfd)
-					reqbody = string(newfdjson)
-				} else {
-					currentfdjson, _ := json.Marshal(currentfd)
-					reqbody = string(currentfdjson)
 				}
 
-				if len(reqbody) > 0 {
+				if currentfd != nil {
 
+					if len(step.Parms) > 0 {
+						newattachments = makeNewAttachments(step.Parms)
+					}
+					currentfd.Attachments = combineAttachments(oldattachments, newattachments)
+
+					newfdjson, _ := json.Marshal(currentfd)
+					reqbody := string(newfdjson)
 					r := regexp.MustCompile(`"submitterAccountId": *(?s)(.*?)\"(.*?)\"`)
 					reqbody = r.ReplaceAllString(reqbody, "\"submitterAccountId\":null")
 					r = regexp.MustCompile(`"lastModifiedDateTime": *(?s)(.*?)\"(.*?)\"`)
 					reqbody = r.ReplaceAllString(reqbody, "\"lastModifiedDateTime\":null")
 
-					//parseConfigString chokes on null values
-					reqbody = strings.Replace(reqbody, ": null", ":\"~null~\"", -1)
-					reqbody = strings.Replace(reqbody, ":null", ":\"~null~\"", -1)
-
-					if step.Action == "updatefd" {
-						var req *config.Config
-						req, err = parseConfigString(reqbody)
-						check(err)
-
-						oldatts, _ := req.Get("attachments")
-						oldattachments = makeAttachmentsSlice(oldatts)
-
-						oldrefs, _ := req.Get("references")
-						oldreferences = makeReferencesSlice(oldrefs)
-					}
-
-					if len(step.Parms) > 0 {
-						var parmscfg *config.Config
-						parmscfg, err := parseConfigString(step.Parms)
-						check(err)
-
-						atts, _ := parmscfg.Get("attachments")
-						attachments := makeAttachmentsSlice(atts)
-						refs, _ := parmscfg.Get("references")
-						references := makeReferencesSlice(refs)
-
-						if step.Action == "updatefd" {
-							attachments = append(oldattachments, attachments...)
-							references = append(oldreferences, references...)
-						}
-
-						jsonb, _ := json.Marshal(attachments)
-						if string(jsonb) != "null" {
-							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(jsonb))
-						}
-
-						jsonb, _ = json.Marshal(references)
-						if string(jsonb) != "null" {
-							r := regexp.MustCompile(`"references": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"references\": "+string(jsonb))
-						}
-					}
-
-					reqbody = strings.Replace(reqbody, ":\"~null~\"", ":null", -1)
 					status, resbytes, timelog = doCall(method, step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 					if status == 201 {
 						result, err := config.ParseJson(string(resbytes))
@@ -720,6 +699,7 @@ func main() {
 				}
 
 			case step.Action == "createcomment":
+				var attachments []Attachment
 				if len(currentfdid) > 0 {
 					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
 				}
@@ -740,20 +720,14 @@ func main() {
 					}
 
 					if len(step.Parms) > 0 {
-						var parmscfg *config.Config
-						parmscfg, err := parseConfigString(step.Parms)
-						check(err)
-
-						atts, _ := parmscfg.Get("attachments")
-						attachments := makeAttachmentsSlice(atts)
-
-						jsonb, _ := json.Marshal(attachments)
-						if string(jsonb) != "null" {
+						attachments = makeNewAttachments(step.Parms)
+						if len(attachments) > 0 {
+							att, err := json.Marshal(attachments)
+							check(err)
 							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(jsonb))
+							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(att))
 						}
 					}
-
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
 					log.Printf("%s with status %d", timelog, status)

@@ -14,9 +14,10 @@ steps:
     url: "/freightdocuments/{{id}}"
   - 
     action: updatefd
-    file: "templates/complete_fd.json"
+    file: "templates/update_fd_19632.json"
     obj: ""
-    parms: ''
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
+	  "content":"","type":"GENERAL","sealed":true}]}'
     url: /freightdocuments/{{id}}	
   - 
     action: getfd

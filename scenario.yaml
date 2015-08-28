@@ -22,14 +22,14 @@ steps:
     file: templates/create_fd.json
     obj: ""
     parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"DOCUMENT REFERENCE 3","value":"3"}]}'
+	  "content":"","type":"GENERAL","sealed":true}]}'
     url: /freightdocuments
   - 
     action: updatefd
     file: templates/update_fd.json
     obj: ""
     parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}],"references":[{"name":"ADDED DOCUMENT REFERENCE 4","value":"4"}]}'
+	  "content":"","type":"GENERAL","sealed":true}]}'
     url: /freightdocuments/{{id}}		
   - 
     action: login
