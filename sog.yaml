@@ -1,0 +1,27 @@
+currentfd: 19632
+steps:
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: ""	
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"	
+  - 
+    action: submitcounterpartyapprovalsog
+    file: templates/counterpartyapprovalsog.json
+    obj: "CARRIER_TO_CARRIER"
+    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
+      "content":"","type":"GENERAL","sealed":true}]}'
+    url: "/freightdocuments/{{id}}/submitcounterpartyapprovalsignonglass"
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"					

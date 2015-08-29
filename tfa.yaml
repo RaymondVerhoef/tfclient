@@ -1,0 +1,26 @@
+currentfd: 19632
+steps:
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: ""	
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"	
+  - 
+    action: submitcounterpartyapprovaltfa
+    file: templates/counterpartyapprovaltfa.json
+    obj: "CARRIER_TO_CARRIER"
+    parms: "0000001234567890123456789"
+    url: "/freightdocuments/{{id}}/submitcounterpartyapprovaltfa"
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"					

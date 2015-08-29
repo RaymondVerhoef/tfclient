@@ -1,0 +1,11 @@
+{
+  "amount": 1234,
+  "organisation": "TransFollow",
+  "streetName": "Kerkstreet",
+  "buildingNumber": "12a",
+  "postalCode": "1234 AB",
+  "cityName": "Nootdorp",
+  "phoneNumber": "+31123456789",
+  "purchaseOrderNumber": "PON1234",
+  "debtorNumber": "ABC1234"
+}

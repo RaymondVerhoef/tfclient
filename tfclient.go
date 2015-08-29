@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -59,6 +60,17 @@ type Login struct {
 	PhoneNumber   string `json:"phoneNumber"`
 	RefreshToken  string `json:"refresh_token"`
 }
+type Order struct {
+	Amount              int    `json:"amount"`
+	BuildingNumber      string `json:"buildingNumber"`
+	CityName            string `json:"cityName"`
+	DebtorNumber        string `json:"debtorNumber"`
+	Organisation        string `json:"organisation"`
+	PhoneNumber         string `json:"phoneNumber"`
+	PostalCode          string `json:"postalCode"`
+	PurchaseOrderNumber string `json:"purchaseOrderNumber"`
+	StreetName          string `json:"streetName"`
+}
 type Step struct {
 	File   string
 	Parms  string
@@ -95,7 +107,7 @@ type Approval struct {
 type Attachment struct {
 	AttachmentId     string `json:"attachmentId"`
 	Content          string `json:"content"`
-	MimeType         string `json:"mimeType"`
+	MimeType         string `json:"mimeType",omitempty`
 	Name             string `json:"name"`
 	OriginalFileName string `json:"originalFileName"`
 	Sealed           bool   `json:"sealed"`
@@ -456,6 +468,7 @@ func makeNewAttachments(jsonstr string) []Attachment {
 				attachment.OriginalFileName, err = filepath.Abs(filepath.Dir(attachment.Name))
 				_, attachment.Name = path.Split(attachment.Name)
 				attachment.OriginalFileName = attachment.OriginalFileName + "/" + attachment.Name
+				attachment.MimeType = mime.TypeByExtension(filepath.Ext(attachment.Name))
 				attachments = append(attachments, *attachment)
 			} else {
 				fmt.Println("Could not find", attachment.Name)
@@ -529,7 +542,9 @@ func main() {
 
 	var currentaccount *Account
 	var currentfdid = ""
+	var currentattid = ""
 	var currentfd *Fd = nil
+	var currentatt *Attachment = nil
 	var previouscommits []string
 
 	argsWithProg := os.Args
@@ -577,7 +592,8 @@ func main() {
 		stepcfg, err := parseConfigString(step_str)
 		steps, _ := stepcfg.Get("steps")
 		check(err)
-		currentfdid, err = stepcfg.String("currentfd")
+		currentfdid, _ = stepcfg.String("currentfd")
+		currentattid, _ = stepcfg.String("currentatt")
 
 	StepLoop:
 		for i, stepmap := range steps.Root.([]interface{}) {
@@ -606,6 +622,30 @@ func main() {
 
 					if len(currentfdid) > 0 {
 						fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
+					}
+				}
+				log.Printf("%s with status %d", timelog, status)
+
+			case step.Action == "getfdatt" || step.Action == "getatt":
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{fdid}}", currentfdid, 1)
+				}
+				if len(currentattid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{atid}}", currentattid, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("GET %s \n", step.Url)
+				fmt.Println("-----------------------------------------------------------------")
+
+				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
+				if status == 200 {
+					jsonerr := json.Unmarshal(resbytes, &currentatt)
+					check(jsonerr)
+					currentattid = currentatt.AttachmentId
+
+					if len(currentfdid) > 0 && len(currentattid) > 0 {
+						fmt.Printf("FD %s with Att %s\n", currentfdid, currentattid)
 					}
 				}
 				log.Printf("%s with status %d", timelog, status)
@@ -782,6 +822,86 @@ func main() {
 					break StepLoop
 				}
 
+			case step.Action == "submitcounterpartyapprovaltfa":
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				if len(currentfdid) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
+					if len(step.Parms) > 0 && len(step.Obj) > 0 {
+						reqbody = strings.Replace(reqbody, "{{resonsecode}}", step.Parms, 1)
+						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
+						if len(previouscommits) > 0 {
+							pc, err := json.Marshal(previouscommits)
+							check(err)
+							r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
+							reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
+						}
+
+						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+
+						log.Printf("%s with status %d", timelog, status)
+					} else {
+						fmt.Println("Parms responsecode and/or Obj transfer missing in scenario file")
+					}
+				} else {
+					fmt.Println("freightDocumentId is missing")
+					break StepLoop
+				}
+
+			case step.Action == "submitcounterpartyapprovalsog":
+				var attachments []Attachment
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				if len(currentfdid) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
+					if len(step.Parms) > 0 && len(step.Obj) > 0 {
+
+						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
+						if len(previouscommits) > 0 {
+							pc, err := json.Marshal(previouscommits)
+							check(err)
+							r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
+							reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
+						}
+
+						attachments = makeNewAttachments(step.Parms)
+						if len(attachments) > 0 {
+							att, err := json.Marshal(attachments)
+							check(err)
+							atts := strings.Replace(string(att), ",\"type\":\"GENERAL\"", "", 1)
+							atts = strings.Replace(atts, ",\"sealed\":true", "", 1)
+							atts = strings.Replace(atts, ",\"size\":0", "", 1)
+							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
+							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+atts)
+						}
+
+						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+
+						log.Printf("%s with status %d", timelog, status)
+					} else {
+						fmt.Println("Parms image file and/or Obj transfer missing in scenario file")
+					}
+				} else {
+					fmt.Println("freightDocumentId is missing")
+					break StepLoop
+				}
+
 			case step.Action == "updatestatus":
 				if len(currentfdid) > 0 {
 					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
@@ -814,6 +934,19 @@ func main() {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
 				}
+
+			case step.Action == "postorder":
+
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				template, err := ioutil.ReadFile(step.File)
+				check(err)
+				reqbody := strings.TrimSpace(string(template))
+				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "login":
 				fmt.Println("-----------------------------------------------------------------")

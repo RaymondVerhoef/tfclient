@@ -1,0 +1,21 @@
+currentfd: 19632
+currentatt: 9823
+steps:
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+  - 
+    action: getfdatt
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{fdid}}/attachments/{{atid}}"
+  - 
+    action: getatt
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/attachments/{{atid}}"	

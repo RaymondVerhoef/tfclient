@@ -1,0 +1,13 @@
+steps:
+ - 
+   action: login
+   file: ""
+   obj: submitter
+   parms: ""
+   url: ""
+ - 
+   action: postorder
+   file: "templates/create_order.json"
+   obj: ""
+   parms: ""
+   url: "/orders"
