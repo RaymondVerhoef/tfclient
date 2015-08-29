@@ -465,33 +465,44 @@ func makeNewAttachments(jsonstr string) []Attachment {
 	return attachments
 }
 
-func combineAttachments(old []Attachment, new []Attachment) []Attachment {
+func isDuplicate(oldid string, new []Attachment) int {
+	for j, _ := range new {
+		newatt := &new[j]
+		if newatt.AttachmentId == oldid {
+			return j
+		}
+	}
+	return -1
+}
+
+func checkAttachments(old []Attachment, new []Attachment, remove bool) []Attachment {
 	var attachments []Attachment
 	for i, _ := range old {
 		// pointers to slice members prevent copies
 		oldatt := &old[i]
-		for j, _ := range new {
+		j := isDuplicate(oldatt.AttachmentId, new)
+		if j >= 0 {
 			newatt := &new[j]
-			if newatt.AttachmentId == oldatt.AttachmentId {
-				if len(newatt.Content) > 0 {
-					oldatt.Content = newatt.Content
-				}
-				if len(newatt.Name) > 0 {
-					oldatt.Name = newatt.Name
-				}
-				if len(newatt.OriginalFileName) > 0 {
-					oldatt.OriginalFileName = newatt.OriginalFileName
-				}
-				oldatt.Sealed = newatt.Sealed
-				oldatt.Size = newatt.Size
-				attachments = append(attachments, *oldatt)
-			} else {
-				attachments = append(attachments, *newatt)
+			if len(newatt.Content) > 0 {
+				oldatt.Content = newatt.Content
 			}
+			if len(newatt.Name) > 0 {
+				oldatt.Name = newatt.Name
+			}
+			if len(newatt.OriginalFileName) > 0 {
+				oldatt.OriginalFileName = newatt.OriginalFileName
+			}
+			oldatt.Sealed = newatt.Sealed
+			oldatt.Size = newatt.Size
+			attachments = append(attachments, *oldatt)
+			new = append(new[:j], new[j+1:]...)
+		} else if remove == false {
+			attachments = append(attachments, *oldatt)
 		}
 	}
 	return attachments
 }
+
 func parseConfigString(cfg_str string) (*config.Config, error) {
 	var err error
 	var cfg *config.Config
@@ -638,7 +649,7 @@ func main() {
 					templatestr = strings.Replace(templatestr, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
 					templatestr = strings.Replace(templatestr, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
 					jsonerr := json.Unmarshal([]byte(templatestr), &currentfd)
-					oldattachments = combineAttachments(oldattachments, currentfd.Attachments)
+					oldattachments = checkAttachments(oldattachments, currentfd.Attachments, true)
 					check(jsonerr)
 				}
 
@@ -647,7 +658,8 @@ func main() {
 					if len(step.Parms) > 0 {
 						newattachments = makeNewAttachments(step.Parms)
 					}
-					currentfd.Attachments = combineAttachments(oldattachments, newattachments)
+					currentfd.Attachments = checkAttachments(oldattachments, newattachments, false)
+					currentfd.Attachments = append(currentfd.Attachments, newattachments...)
 
 					newfdjson, _ := json.Marshal(currentfd)
 					reqbody := string(newfdjson)

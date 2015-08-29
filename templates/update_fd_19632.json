@@ -39,15 +39,25 @@
     "transportConditions": "AVC2002",
     "attachments": [
         {
-            "attachmentId": "9810",
+            "attachmentId": "9818",
             "name": "img.png",
             "mimeType": "image/png",
-            "originalFileName": "/Users/Frank/Projects/Go/src/github.com/frankkeiren/tfclient/attachments/img.png",
+            "originalFileName": "/image_deleted_when_content_empty/img.png",
+            "content": "",
+            "sealed": false,
+            "type": "GENERAL",
+            "size": 0
+        },
+        {
+            "attachmentId": "9819",
+            "name": "img.png",
+            "mimeType": "image/jpg",
+            "originalFileName": "/mimetype_can_be_changed/img.png",
             "content": "",
             "sealed": true,
             "type": "GENERAL",
             "size": 0
-        }
+        }        
     ],
     "comments": [],
     "status": "DRAFT",
