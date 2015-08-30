@@ -1,0 +1,8 @@
+steps:
+  - 
+    action: createaccount
+    file: templates/create_account.json
+    obj: submitter
+    parms: ""
+    url: ""
+    asserts: '{"asserts":[{"status":[201, 200]}]}'

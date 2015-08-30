@@ -72,13 +72,18 @@ type Order struct {
 	StreetName          string `json:"streetName"`
 }
 type Step struct {
-	File   string
-	Parms  string
-	Obj    string
-	Action string
-	Url    string
+	File    string
+	Parms   string
+	Obj     string
+	Action  string
+	Url     string
+	Asserts string
 }
-
+type Assert struct {
+	Asserts []struct {
+		Status []int `json:"status"`
+	} `json:"asserts"`
+}
 type Approval struct {
 	Action   string `json:"action"`
 	Evidence struct {
@@ -219,6 +224,15 @@ func basicAuthEnc(id string, secret string) string {
 	return "Basic " + enc
 }
 
+func intInSlice(a int, list []int) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
@@ -305,7 +319,7 @@ func login(account Account, refreshtoken string) int {
 		fmt.Println("REQUEST")
 		fmt.Println("POST", "/oauth/token")
 		for k, v := range req.Header {
-			fmt.Println(k+":", v)
+			fmt.Printf("%s: %v\n", k, v)
 		}
 		reqbodystr := reqbody.Encode()
 		if len(reqbodystr) > 0 {
@@ -403,7 +417,7 @@ func callApi(method string, url string, auth string, reqbody string) (int, []byt
 		fmt.Println("REQUEST")
 		fmt.Println(method, req.URL)
 		for k, v := range req.Header {
-			fmt.Println(k+":", v)
+			fmt.Printf("%s: %v\n", k, v)
 		}
 
 		if len(reqbody) > 0 {
@@ -599,8 +613,13 @@ func main() {
 		for i, stepmap := range steps.Root.([]interface{}) {
 
 			var step Step
+			var asserts Assert
 			err = fillStruct(stepmap.(map[string]interface{}), &step)
 			check(err)
+			if len(step.Asserts) > 0 {
+				err := json.Unmarshal([]byte(step.Asserts), &asserts)
+				check(err)
+			}
 
 			switch {
 
@@ -1003,6 +1022,13 @@ func main() {
 				}
 				status, resbytes, timelog = createAccount(step.File, *currentaccount)
 				log.Printf("%s with status %d", timelog, status)
+			}
+
+			if len(asserts.Asserts) > 0 {
+				if false == intInSlice(status, asserts.Asserts[0].Status) {
+					fmt.Printf("Assert status %v failed: %d\n", asserts.Asserts[0].Status, status)
+					break StepLoop
+				}
 			}
 
 		}
