@@ -6,7 +6,7 @@ steps:
    parms: ""
    url: ""
  - 
-   action: postorder
+   action: genericpost
    file: "templates/create_order.json"
    obj: ""
    parms: ""

@@ -84,6 +84,9 @@ type Assert struct {
 		Status []int `json:"status"`
 	} `json:"asserts"`
 }
+type Build struct {
+	Version string `json:"buildVersion"`
+}
 type Approval struct {
 	Action   string `json:"action"`
 	Evidence struct {
@@ -202,6 +205,7 @@ type Fd struct {
 	Updates                       []Update        `json:"updates"`
 }
 
+var build Build
 var currentlogin Login
 var submitter Account
 var consignor Account
@@ -340,7 +344,7 @@ func login(account Account, refreshtoken string) int {
 		check(jsonerr)
 		if refreshtoken == "" {
 			url := "/accounts/users/me"
-			status, resbytes, _ = callApi("GET", url, "Bearer "+currentlogin.AccessToken, "")
+			status, resbytes, _ = callApi("GET", url, "Bearer "+currentlogin.AccessToken, "", 0)
 			if status == 200 {
 				jsonerr = json.Unmarshal(resbytes, &currentlogin)
 				check(jsonerr)
@@ -378,7 +382,11 @@ func createAccount(filename string, acc Account) (int, []byte, string) {
 
 func isOnline(host string) bool {
 	url := "/heartbeat"
-	status, _, _ := callApi("GET", url, "", "")
+	status, resbytes, _ := callApi("GET", url, "", "", 0)
+	if status == 200 {
+		jsonerr := json.Unmarshal(resbytes, &build)
+		check(jsonerr)
+	}
 	return status == 200
 }
 
@@ -387,7 +395,7 @@ func refreshToken() int {
 	return login(*account, currentlogin.RefreshToken)
 }
 
-func callApi(method string, url string, auth string, reqbody string) (int, []byte, string) {
+func callApi(method string, url string, auth string, reqbody string, partlog int) (int, []byte, string) {
 	var resbody = ""
 	var resbytes = []byte(resbody)
 	var reqbytes = []byte(reqbody)
@@ -395,7 +403,9 @@ func callApi(method string, url string, auth string, reqbody string) (int, []byt
 	req, err := http.NewRequest(method, "https://"+host+url, bytes.NewBuffer(reqbytes))
 	check(err)
 
-	req.Header.Set("Authorization", auth)
+	if len(auth) > 0 {
+		req.Header.Set("Authorization", auth)
+	}
 	req.Header.Set("Accept", "application/json")
 	if stringInSlice(method, nobody) == false {
 		req.Header.Set("Content-Type", "application/json")
@@ -414,22 +424,28 @@ func callApi(method string, url string, auth string, reqbody string) (int, []byt
 	}
 
 	if httplog {
-		fmt.Println("REQUEST")
-		fmt.Println(method, req.URL)
-		for k, v := range req.Header {
-			fmt.Printf("%s: %v\n", k, v)
+		if partlog > 3 {
+			fmt.Println("REQUEST")
+			fmt.Println(method, req.URL)
+			for k, v := range req.Header {
+				fmt.Printf("%s: %v\n", k, v)
+			}
 		}
-
-		if len(reqbody) > 0 {
-			fmt.Println(" ")
-			fmt.Println(reqbody)
+		if partlog > 2 {
+			if len(reqbody) > 0 {
+				fmt.Println(" ")
+				fmt.Println(reqbody)
+			}
 		}
-
-		fmt.Println("RESPONSE")
-		fmt.Println("Status", resp.StatusCode)
-		if len(string(resbytes)) > 0 {
-			fmt.Println(" ")
-			fmt.Println(string(resbytes))
+		if partlog > 1 {
+			fmt.Println("RESPONSE")
+			fmt.Println("Status", resp.StatusCode)
+		}
+		if partlog > 0 {
+			if len(string(resbytes)) > 0 {
+				fmt.Println(" ")
+				fmt.Println(string(resbytes))
+			}
 		}
 	}
 
@@ -441,7 +457,7 @@ func callApi(method string, url string, auth string, reqbody string) (int, []byt
 
 func doCall(method string, url string, auth string, reqbody string) (int, []byte, string) {
 	var errors Errs
-	status, resbytes, timelog := callApi(method, url, auth, reqbody)
+	status, resbytes, timelog := callApi(method, url, auth, reqbody, 4)
 
 	if status >= 400 {
 		jsonerr := json.Unmarshal(resbytes, &errors)
@@ -591,11 +607,9 @@ func main() {
 	makeAccountStruct(cfg, "consignee", &consignee)
 	makeAccountStruct(cfg, "carrier", &carrier)
 
-	fmt.Println("-----------------------------------------------------------------")
-	fmt.Println("Start")
-	fmt.Println("-----------------------------------------------------------------")
 	if isOnline(host) {
-		fmt.Println("Environment:", host)
+		fmt.Println("-----------------------------------------------------------------")
+		fmt.Println("Start scenario on", host, build.Version)
 		clientid, _ = env.String("client.id")
 		clientsecret, _ = env.String("client.secret")
 
@@ -622,6 +636,36 @@ func main() {
 			}
 
 			switch {
+			case step.Action == "genericget":
+
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("GET %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				if len(currentlogin.AccessToken) > 0 {
+					status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
+				} else {
+					status, resbytes, timelog = doCall("GET", step.Url, "", "")
+				}
+				log.Printf("%s with status %d", timelog, status)
+
+			case step.Action == "validateemailtoken":
+				if len(step.Parms) > 0 {
+					step.Url = strings.Replace(step.Url, "{{token}}", step.Parms, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("GET %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				if len(step.Parms) > 0 {
+					status, resbytes, timelog = doCall("GET", step.Url, "", "")
+
+					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("email token missing")
+				}
 
 			case step.Action == "getfd":
 				if len(currentfdid) > 0 {
@@ -631,19 +675,22 @@ func main() {
 				fmt.Println("Step", i+1)
 				fmt.Printf("GET %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
+				if len(currentfdid) > 0 {
+					status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
+					if status == 200 {
+						jsonerr := json.Unmarshal(resbytes, &currentfd)
+						check(jsonerr)
+						currentfdid = currentfd.FreightDocumentID
+						previouscommits = currentfd.PreviousCommits
 
-				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
-				if status == 200 {
-					jsonerr := json.Unmarshal(resbytes, &currentfd)
-					check(jsonerr)
-					currentfdid = currentfd.FreightDocumentID
-					previouscommits = currentfd.PreviousCommits
-
-					if len(currentfdid) > 0 {
-						fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
+						if len(currentfdid) > 0 {
+							fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
+						}
 					}
+					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("freightDocumentId missing")
 				}
-				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "getfdatt" || step.Action == "getatt":
 				if len(currentfdid) > 0 {
@@ -656,18 +703,48 @@ func main() {
 				fmt.Println("Step", i+1)
 				fmt.Printf("GET %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
+				if len(currentfdid) > 0 && len(currentattid) > 0 {
+					status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
+					if status == 200 {
+						jsonerr := json.Unmarshal(resbytes, &currentatt)
+						check(jsonerr)
+						currentattid = currentatt.AttachmentId
 
-				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
-				if status == 200 {
-					jsonerr := json.Unmarshal(resbytes, &currentatt)
-					check(jsonerr)
-					currentattid = currentatt.AttachmentId
-
-					if len(currentfdid) > 0 && len(currentattid) > 0 {
 						fmt.Printf("FD %s with Att %s\n", currentfdid, currentattid)
 					}
+					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("freightDocumentId and/or attachmentId missing")
 				}
-				log.Printf("%s with status %d", timelog, status)
+
+			case step.Action == "getfdresponsecode":
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				}
+				if len(step.Obj) > 0 {
+					step.Url = strings.Replace(step.Url, "{{transfertype}}", step.Obj, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("GET %s \n", step.Url)
+				fmt.Println("-----------------------------------------------------------------")
+				if len(currentfdid) > 0 && len(step.Obj) > 0 {
+					status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
+					if status == 200 {
+						jsonerr := json.Unmarshal(resbytes, &currentfd)
+						check(jsonerr)
+						currentfdid = currentfd.FreightDocumentID
+						previouscommits = currentfd.PreviousCommits
+
+						if len(currentfdid) > 0 {
+							fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
+						}
+					}
+					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("freightDocumentId and/or Obj transfertype missing")
+					break StepLoop
+				}
 
 			case step.Action == "issuefd":
 				if len(currentfdid) > 0 {
@@ -677,12 +754,15 @@ func main() {
 				fmt.Println("Step", i+1)
 				fmt.Printf("POST %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
-
-				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, "")
-				log.Printf("%s with status %d", timelog, status)
+				if len(currentfdid) > 0 {
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, "")
+					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("freightDocumentId is missing")
+					break StepLoop
+				}
 
 			case step.Action == "createfd" || step.Action == "updatefd":
-
 				var oldattachments []Attachment
 				var newattachments []Attachment
 				var method = "PUT"
@@ -817,10 +897,10 @@ func main() {
 				fmt.Println("-----------------------------------------------------------------")
 
 				if len(currentfdid) > 0 {
-					template, err := ioutil.ReadFile(step.File)
-					check(err)
-					reqbody := strings.TrimSpace(string(template))
 					if len(step.Parms) > 0 && len(step.Obj) > 0 {
+						template, err := ioutil.ReadFile(step.File)
+						check(err)
+						reqbody := strings.TrimSpace(string(template))
 						reqbody = strings.Replace(reqbody, "{{ownrole}}", step.Parms, 1)
 						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
 						if len(previouscommits) > 0 {
@@ -834,7 +914,7 @@ func main() {
 
 						log.Printf("%s with status %d", timelog, status)
 					} else {
-						fmt.Println("Parms role and/or Obj transfer missing in scenario file")
+						fmt.Println("Parms role and/or Obj transfer missing")
 					}
 				} else {
 					fmt.Println("freightDocumentId is missing")
@@ -851,10 +931,11 @@ func main() {
 				fmt.Println("-----------------------------------------------------------------")
 
 				if len(currentfdid) > 0 {
-					template, err := ioutil.ReadFile(step.File)
-					check(err)
-					reqbody := strings.TrimSpace(string(template))
 					if len(step.Parms) > 0 && len(step.Obj) > 0 {
+						template, err := ioutil.ReadFile(step.File)
+						check(err)
+						reqbody := strings.TrimSpace(string(template))
+
 						reqbody = strings.Replace(reqbody, "{{resonsecode}}", step.Parms, 1)
 						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
 						if len(previouscommits) > 0 {
@@ -868,7 +949,7 @@ func main() {
 
 						log.Printf("%s with status %d", timelog, status)
 					} else {
-						fmt.Println("Parms responsecode and/or Obj transfer missing in scenario file")
+						fmt.Println("Parms responsecode and/or Obj transfer missing")
 					}
 				} else {
 					fmt.Println("freightDocumentId is missing")
@@ -886,10 +967,10 @@ func main() {
 				fmt.Println("-----------------------------------------------------------------")
 
 				if len(currentfdid) > 0 {
-					template, err := ioutil.ReadFile(step.File)
-					check(err)
-					reqbody := strings.TrimSpace(string(template))
 					if len(step.Parms) > 0 && len(step.Obj) > 0 {
+						template, err := ioutil.ReadFile(step.File)
+						check(err)
+						reqbody := strings.TrimSpace(string(template))
 
 						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
 						if len(previouscommits) > 0 {
@@ -914,7 +995,7 @@ func main() {
 
 						log.Printf("%s with status %d", timelog, status)
 					} else {
-						fmt.Println("Parms image file and/or Obj transfer missing in scenario file")
+						fmt.Println("Parms image file and/or Obj transfer missing")
 					}
 				} else {
 					fmt.Println("freightDocumentId is missing")
@@ -931,10 +1012,11 @@ func main() {
 				fmt.Println("-----------------------------------------------------------------")
 
 				if len(currentfdid) > 0 {
-					template, err := ioutil.ReadFile(step.File)
-					check(err)
-					reqbody := strings.TrimSpace(string(template))
 					if len(step.Obj) > 0 {
+						template, err := ioutil.ReadFile(step.File)
+						check(err)
+						reqbody := strings.TrimSpace(string(template))
+
 						reqbody = strings.Replace(reqbody, "{{newstatus}}", step.Obj, 1)
 						if len(previouscommits) > 0 {
 							pc, err := json.Marshal(previouscommits)
@@ -947,14 +1029,14 @@ func main() {
 
 						log.Printf("%s with status %d", timelog, status)
 					} else {
-						fmt.Println("Obj newstatus missing in scenario file")
+						fmt.Println("Obj newstatus missing")
 					}
 				} else {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
 				}
 
-			case step.Action == "postorder":
+			case step.Action == "genericpost":
 
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
@@ -964,7 +1046,11 @@ func main() {
 				template, err := ioutil.ReadFile(step.File)
 				check(err)
 				reqbody := strings.TrimSpace(string(template))
-				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+				if len(currentlogin.AccessToken) > 0 {
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+				} else {
+					status, resbytes, timelog = doCall("POST", step.Url, "", reqbody)
+				}
 				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "login":
@@ -993,7 +1079,7 @@ func main() {
 				if status == 200 {
 					fmt.Println("Logged in as", currentaccount.Name)
 				} else if status == 800 {
-					fmt.Println("No credentials found to log in with")
+					fmt.Println("No credentials found in config to log in with")
 				} else {
 					break StepLoop
 				}
@@ -1032,10 +1118,11 @@ func main() {
 			}
 
 		}
+		fmt.Println("-----------------------------------------------------------------")
+		fmt.Println("End scenario")
+		fmt.Println("-----------------------------------------------------------------")
+
 	} else {
-		fmt.Println("Offline:", host)
+		fmt.Println("Offline host:", host)
 	}
-	fmt.Println("-----------------------------------------------------------------")
-	fmt.Println("End")
-	fmt.Println("-----------------------------------------------------------------")
 }
