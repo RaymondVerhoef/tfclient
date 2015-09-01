@@ -24,4 +24,4 @@ steps:
     file: ""
     obj: ""
     parms: ""
-    url: "/freightdocuments/{{id}}"					
+    url: "/freightdocuments/{{id}}"

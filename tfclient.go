@@ -87,7 +87,7 @@ type Assert struct {
 type Build struct {
 	Version string `json:"buildVersion"`
 }
-type Approval struct {
+type ApprovalPostBody struct {
 	Action   string `json:"action"`
 	Evidence struct {
 		Attachments []struct {
@@ -111,7 +111,35 @@ type Approval struct {
 	PreviousCommits      []string `json:"previousCommits"`
 	SecondsSinceCreation int      `json:"secondsSinceCreation"`
 }
-
+type Approval struct {
+	Account struct {
+		AccountID     string `json:"accountId"`
+		AccountNumber string `json:"accountNumber"`
+		Email         string `json:"email"`
+		Name          string `json:"name"`
+		PhoneNumber   string `json:"phoneNumber"`
+	} `json:"account"`
+	Action               string `json:"action"`
+	ApprovalID           string `json:"approvalId"`
+	CommitID             string `json:"commitId"`
+	CreateDateTimeClient string `json:"createDateTimeClient"`
+	CreateDateTimeServer string `json:"createDateTimeServer"`
+	Location             struct {
+		Latitude  string `json:"latitude"`
+		Longitude string `json:"longitude"`
+	} `json:"location"`
+	Place           string   `json:"place"`
+	PreviousCommits []string `json:"previousCommits"`
+	Role            string   `json:"role"`
+	SubmittedBy     struct {
+		AccountID     string `json:"accountId"`
+		AccountNumber string `json:"accountNumber"`
+		Email         string `json:"email"`
+		Name          string `json:"name"`
+		PhoneNumber   string `json:"phoneNumber"`
+	} `json:"submittedBy"`
+	Type string `json:"type"`
+}
 type Attachment struct {
 	AttachmentId     string `json:"attachmentId"`
 	Content          string `json:"content"`
@@ -122,7 +150,7 @@ type Attachment struct {
 	Size             int    `json:"size"`
 	Type             string `json:"type"`
 }
-type Comment struct {
+type CommentPostBody struct {
 	Attachments []struct {
 		Content          string `json:"content"`
 		Name             string `json:"name"`
@@ -134,6 +162,29 @@ type Comment struct {
 	PreviousCommits      []interface{} `json:"previousCommits"`
 	SecondsSinceCreation int           `json:"secondsSinceCreation"`
 	Text                 string        `json:"text"`
+}
+type Comment struct {
+	AccountID   string `json:"accountId"`
+	Attachments []struct {
+		AttachmentID     string `json:"attachmentId"`
+		Content          string `json:"content"`
+		MimeType         string `json:"mimeType"`
+		Name             string `json:"name"`
+		OriginalFileName string `json:"originalFileName"`
+		Sealed           bool   `json:"sealed"`
+		Size             int    `json:"size"`
+		Type             string `json:"type"`
+	} `json:"attachments"`
+	ClientMeta           string   `json:"clientMeta"`
+	CommentID            string   `json:"commentId"`
+	CommitID             string   `json:"commitId"`
+	CreateDateTimeClient string   `json:"createDateTimeClient"`
+	CreateDateTimeServer string   `json:"createDateTimeServer"`
+	CreatorName          string   `json:"creatorName"`
+	CreatorRole          string   `json:"creatorRole"`
+	PreviousCommits      []string `json:"previousCommits"`
+	Text                 string   `json:"text"`
+	Type                 string   `json:"type"`
 }
 type OwnPermission struct {
 	Permissions []string `json:"permissions"`
@@ -162,22 +213,43 @@ type Role struct {
 	SubmittedAccountEmailAddress string `json:"submittedAccountEmailAddress"`
 	SubmittedAccountNumber       string `json:"submittedAccountNumber"`
 }
-type Update struct {
+type Secrets struct {
+	S1 string `json:"s1"`
+	S2 string `json:"s2"`
+	S3 string `json:"s3"`
+}
+type UpdatePostBody struct {
 	NewFreightDocumentStatus string   `json:"newFreightDocumentStatus"`
 	PreviousCommits          []string `json:"previousCommits"`
 	SecondsSinceCreation     int      `json:"secondsSinceCreation"`
 }
-
+type Update struct {
+	Account struct {
+		AccountID     string `json:"accountId"`
+		AccountNumber string `json:"accountNumber"`
+		Email         string `json:"email"`
+		Name          string `json:"name"`
+		PhoneNumber   string `json:"phoneNumber"`
+	} `json:"account"`
+	CommitID                 string        `json:"commitId"`
+	CreateDateTimeClient     string        `json:"createDateTimeClient"`
+	CreateDateTimeServer     string        `json:"createDateTimeServer"`
+	NewFreightDocumentStatus string        `json:"newFreightDocumentStatus"`
+	PreviousCommits          []interface{} `json:"previousCommits"`
+	StatusUpdateID           string        `json:"statusUpdateId"`
+}
 type Fd struct {
 	AgreedDateOfTakingOver        string          `json:"agreedDateOfTakingOver"`
 	Approvals                     []Approval      `json:"approvals"`
 	Attachments                   []Attachment    `json:"attachments"`
 	Carrier                       Role            `json:"carrier"`
 	CarrierCode                   string          `json:"carrierCode"`
+	CollectionSecrets             Secrets         `json:"collectionSecrets"`
 	Comments                      []Comment       `json:"comments"`
 	Consignee                     Role            `json:"consignee"`
 	Consignor                     Role            `json:"consignor"`
 	DeliveryDate                  string          `json:"deliveryDate"`
+	DeliverySecrets               Secrets         `json:"deliverySecrets"`
 	EstablishedDate               string          `json:"establishedDate"`
 	EstablishedPlace              string          `json:"establishedPlace"`
 	EstimatedDateTimeOfDelivery   string          `json:"estimatedDateTimeOfDelivery"`
@@ -806,6 +878,10 @@ func main() {
 					reqbody = r.ReplaceAllString(reqbody, "\"submitterAccountId\":null")
 					r = regexp.MustCompile(`"lastModifiedDateTime": *(?s)(.*?)\"(.*?)\"`)
 					reqbody = r.ReplaceAllString(reqbody, "\"lastModifiedDateTime\":null")
+					r = regexp.MustCompile(`"collectionSecrets": *(?s)(.*?)\{(.*?)\}`)
+					reqbody = r.ReplaceAllString(reqbody, "\"collectionSecrets\":null")
+					r = regexp.MustCompile(`"deliverySecrets": *(?s)(.*?)\{(.*?)\}`)
+					reqbody = r.ReplaceAllString(reqbody, "\"deliverySecrets\":null")
 
 					status, resbytes, timelog = doCall(method, step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 					if status == 201 {

@@ -20,6 +20,12 @@ steps:
 	  "content":"","type":"GENERAL","sealed":true}]}'
     url: /freightdocuments/{{id}}	
   - 
+    action: issuefd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}/issue"	
+  - 
     action: login
     file: ""
     obj: carrier

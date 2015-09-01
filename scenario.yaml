@@ -55,4 +55,4 @@ steps:
     obj: ""
     parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
 	  "content":"","type":"REMARKS","sealed":false}]}'
-    url: /freightdocuments/{{id}}/comments				
+    url: /freightdocuments/{{id}}/comments			

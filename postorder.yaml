@@ -1,13 +1,13 @@
 steps:
- - 
-   action: login
-   file: ""
-   obj: submitter
-   parms: ""
-   url: ""
- - 
-   action: genericpost
-   file: "templates/create_order.json"
-   obj: ""
-   parms: ""
-   url: "/orders"
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+  - 
+    action: genericpost
+    file: "templates/create_order.json"
+    obj: ""
+    parms: ""
+    url: "/orders"
