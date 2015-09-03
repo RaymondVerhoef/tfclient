@@ -1,0 +1,20 @@
+steps:
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+  - 
+    action: createfd
+    file: "templates/create_fd.json"
+    obj: ""
+    parms: ""
+    url: "/freightdocuments"    
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+	
