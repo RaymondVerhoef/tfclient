@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"mime"
 	"net/http"
 	"net/url"
@@ -15,6 +17,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -354,6 +357,85 @@ func fillStruct(m map[string]interface{}, s interface{}) error {
 		structFieldValue.Set(val)
 	}
 	return nil
+}
+
+func generateMAC(TFN string, secret string, length int) string {
+
+	var blocksizeBits = 512
+	var blocksizeBytes = blocksizeBits / 8
+
+	// convert secret to byte array;
+	bsecret, err := b64.StdEncoding.DecodeString(secret)
+	if err != nil {
+		fmt.Println("error:", err)
+		return ""
+	}
+
+	// secret should be 512 bits; the above should already have ensured this, and this is just here as an extra check
+	if len(bsecret) != blocksizeBytes {
+		fmt.Printf("Secret size was %d instead of 512", len(bsecret)*8)
+		return ""
+	}
+
+	var opadKey = make([]byte, blocksizeBytes)
+	var ipadKey = make([]byte, blocksizeBytes)
+	for i := 0; i < blocksizeBytes; i++ {
+		opadKey[i] = (0x5c ^ bsecret[i])
+		ipadKey[i] = (0x36 ^ bsecret[i])
+	}
+
+	ktfn := append(ipadKey, []byte(TFN)...)
+	sha1 := sha256.New()
+	sha1.Write([]byte(ktfn))
+
+	ksha := append(opadKey, sha1.Sum(nil)...)
+
+	sha2 := sha256.New()
+	sha2.Write([]byte(ksha))
+
+	mac := sha2.Sum(nil)
+	bigint := new(big.Int).SetBytes(mac)
+	tostring := bigint.String()
+	return tostring[len(tostring)-length : len(tostring)]
+}
+
+func generateContentMAC(contenthash string, transfollownumber string, accountsecret string) string {
+	message := contenthash + "|" + transfollownumber
+	return generateMAC(message, accountsecret, 5)
+}
+
+func generateContentHash(transfollownumber string, ctxt []string) string {
+	var content string
+	cnt := len(ctxt)
+	if cnt == 0 {
+		return ""
+	}
+	sort.Strings(ctxt)
+	for i := 0; i < cnt; i++ {
+		content += ctxt[i] + "|"
+	}
+
+	content = content + transfollownumber
+
+	if cnt > 9 {
+		cnt = 9
+	}
+
+	hash := sha256.New()
+	hash.Write([]byte(content))
+	sum := hash.Sum(nil)
+	bigint := new(big.Int).SetBytes(sum)
+	tostring := bigint.String()
+	withcount := tostring + strconv.Itoa(cnt)
+	return withcount[len(withcount)-5 : len(withcount)]
+}
+
+func createHashAndMac() {
+	comments := []string{"ant", "dee", "cod", "door"}
+	contenthash := generateContentHash("123456789012", comments)
+	contentmac := generateContentMAC(contenthash, "123456789012", "YqjB5RHOmX2CIMHGPJ1RdE4xM8xB3wR4lyCwxvvzcKMDyveTfnAU4rUnMBh5ZI4zKJ44DMFk+TCDkHx0Jy4IpQ==")
+	fmt.Println("Ch", contenthash)
+	fmt.Println("Cm", contentmac)
 }
 
 func login(account Account, refreshtoken string) int {
