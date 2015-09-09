@@ -31,12 +31,42 @@ import (
 const datelo = "2006-01-02"
 const timelo = "2006-01-02T15:04:05Z"
 
-var host = ""
-var httplog = false
-var clientid = ""
-var clientsecret = ""
-var methods = []string{"POST", "PUT", "PATCH", "DELETE", "HEAD", "GET", "OPTIONS", "TRACE"}
-var nobody = []string{"HEAD", "GET", "OPTIONS", "TRACE"}
+// Verhoeff
+type row [10]int
+
+// multiplication table
+type mTable [10]row
+
+var d mTable = mTable{
+	row{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	row{1, 2, 3, 4, 0, 6, 7, 8, 9, 5},
+	row{2, 3, 4, 0, 1, 7, 8, 9, 5, 6},
+	row{3, 4, 0, 1, 2, 8, 9, 5, 6, 7},
+	row{4, 0, 1, 2, 3, 9, 5, 6, 7, 8},
+	row{5, 9, 8, 7, 6, 0, 4, 3, 2, 1},
+	row{6, 5, 9, 8, 7, 1, 0, 4, 3, 2},
+	row{7, 6, 5, 9, 8, 2, 1, 0, 4, 3},
+	row{8, 7, 6, 5, 9, 3, 2, 1, 0, 4},
+	row{9, 8, 7, 6, 5, 4, 3, 2, 1, 0},
+}
+
+// permutation table
+type pTable [8]row
+
+var p pTable = pTable{
+	row{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	row{1, 5, 7, 6, 2, 8, 3, 0, 9, 4},
+	row{5, 8, 0, 3, 7, 9, 6, 1, 4, 2},
+	row{8, 9, 1, 6, 0, 4, 3, 5, 2, 7},
+	row{9, 4, 5, 3, 1, 2, 6, 8, 7, 0},
+	row{4, 2, 8, 6, 5, 7, 3, 9, 0, 1},
+	row{2, 7, 9, 3, 8, 0, 6, 4, 1, 5},
+	row{7, 0, 4, 6, 9, 1, 3, 2, 5, 8},
+}
+
+var inv row = row{0, 4, 3, 2, 1, 5, 6, 7, 8, 9}
+
+// Structs
 
 type Account struct {
 	AccountId   string `json:"accountId"`
@@ -280,6 +310,38 @@ type Fd struct {
 	Updates                       []Update        `json:"updates"`
 }
 
+// Enums
+
+type TransferType int
+
+const (
+	CONSIGNOR_TO_CARRIER TransferType = 1 + iota
+	TO_OTHER_CARRIER
+	RECEIVE_FROM_OTHER_CARRIER
+	CARRIER_TO_CONSIGNEE
+	UNKNOWN
+)
+
+var transfertypes = [...]string{
+	"CONSIGNOR_TO_CARRIER",
+	"TO_OTHER_CARRIER",
+	"RECEIVE_FROM_OTHER_CARRIER",
+	"CARRIER_TO_CONSIGNEE",
+	"UNKNOWN",
+}
+
+// String returns the name of the TransferType
+func (t TransferType) String() string { return transfertypes[t-1] }
+
+// Globals
+
+var host = ""
+var httplog = false
+var clientid = ""
+var clientsecret = ""
+var methods = []string{"POST", "PUT", "PATCH", "DELETE", "HEAD", "GET", "OPTIONS", "TRACE"}
+var nobody = []string{"HEAD", "GET", "OPTIONS", "TRACE"}
+
 var build Build
 var currentlogin Login
 var submitter Account
@@ -321,6 +383,15 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
+func leftPad(s string, max int) string {
+	len := max - len(s)
+	if len > 0 {
+		return strings.Repeat("0", len) + s
+	} else {
+		return s
+	}
+}
+
 func capitalize(s string) string {
 	if s == "" {
 		return ""
@@ -359,6 +430,91 @@ func fillStruct(m map[string]interface{}, s interface{}) error {
 	return nil
 }
 
+func generateVerhoeff(num string) string {
+	ln := len(num)
+	c := 0
+	for i := 0; i < ln; i++ {
+		c = d[c][p[((i + 1) % 8)][int(num[ln-i-1]-'0')]]
+	}
+	return strconv.Itoa(inv[c])
+}
+
+func validateVerhoeff(num string) bool {
+	ln := len(num)
+	c := 0
+	for i := 0; i < ln; i++ {
+		c = d[c][p[(i % 8)][int(num[ln-i-1]-'0')]]
+	}
+	return c == 0
+}
+
+func getSecrets(freightDocument Fd, ttype TransferType) Secrets {
+
+	var secrets Secrets
+	switch {
+	case ttype == CONSIGNOR_TO_CARRIER:
+		secrets = freightDocument.CollectionSecrets
+		break
+	case ttype == TO_OTHER_CARRIER:
+	case ttype == RECEIVE_FROM_OTHER_CARRIER:
+	case ttype == CARRIER_TO_CONSIGNEE:
+		secrets = freightDocument.DeliverySecrets
+		break
+	}
+	return secrets
+}
+
+func gatherComments(freightDocument Fd) []string {
+	var comments []string
+	for i, _ := range freightDocument.Comments {
+		comment := freightDocument.Comments[i].Text
+		if len(comment) > 0 {
+			comments = append(comments, comment)
+		}
+	}
+	return comments
+}
+
+func generateChallengeCode(freightDocument Fd, ttype TransferType) string {
+	secrets := getSecrets(freightDocument, ttype)
+
+	if len(secrets.S1) == 0 {
+		fmt.Println("User does not have the rights to access S1 for this transfer, meaning he is not the carrier of this document")
+		return ""
+	}
+	if len(secrets.S3) == 0 {
+		if ttype == CONSIGNOR_TO_CARRIER {
+			fmt.Println("User does not have the rights to access S3 for this transfer, meaning he is neither the carrier of this document, nor the consignor")
+		} else {
+			fmt.Println("User does not have the rights to access S3 for this transfer, meaning he is neither the carrier of this document, nor the consignee")
+		}
+		return ""
+	}
+
+	comments := gatherComments(freightDocument)
+	contentHash := generateContentHash(freightDocument.TransFollowNumber, comments)
+
+	return calculateChallengeCode(freightDocument.TransFollowNumber, secrets.S1, secrets.S3, contentHash)
+}
+
+func calculateChallengeCode(transfollowNumber string, s1 string, s3 string, contentHash string) string {
+	var code string = ""
+	if len(s1) == 0 || len(s3) == 0 || len(contentHash) == 0 || len(transfollowNumber) != 12 {
+		fmt.Println("Missing s1, s3, contentHash and/or transfollowNumber")
+		return ""
+	}
+	contentHash = leftPad(contentHash, 5)
+	s1 = leftPad(s1, 4)
+	s3 = leftPad(s3, 3)
+	code = contentHash + transfollowNumber + s1 + s3
+	code = code + generateVerhoeff(code)
+
+	if len(code) != 25 {
+		fmt.Println("Challenge code somehow isn't 25 digits!")
+	}
+	return code
+}
+
 func generateMAC(TFN string, secret string, length int) string {
 
 	var blocksizeBits = 512
@@ -373,7 +529,7 @@ func generateMAC(TFN string, secret string, length int) string {
 
 	// secret should be 512 bits; the above should already have ensured this, and this is just here as an extra check
 	if len(bsecret) != blocksizeBytes {
-		fmt.Printf("Secret size was %d instead of 512", len(bsecret)*8)
+		fmt.Printf("Secret size was %d instead of 512\n", len(bsecret)*8)
 		return ""
 	}
 
