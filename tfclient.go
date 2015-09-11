@@ -475,32 +475,10 @@ func gatherComments(freightDocument Fd) []string {
 	return comments
 }
 
-func generateChallengeCode(freightDocument Fd, ttype TransferType) string {
-	secrets := getSecrets(freightDocument, ttype)
-
-	if len(secrets.S1) == 0 {
-		fmt.Println("User does not have the rights to access S1 for this transfer, meaning he is not the carrier of this document")
-		return ""
-	}
-	if len(secrets.S3) == 0 {
-		if ttype == CONSIGNOR_TO_CARRIER {
-			fmt.Println("User does not have the rights to access S3 for this transfer, meaning he is neither the carrier of this document, nor the consignor")
-		} else {
-			fmt.Println("User does not have the rights to access S3 for this transfer, meaning he is neither the carrier of this document, nor the consignee")
-		}
-		return ""
-	}
-
-	comments := gatherComments(freightDocument)
-	contentHash := generateContentHash(freightDocument.TransFollowNumber, comments)
-
-	return calculateChallengeCode(freightDocument.TransFollowNumber, secrets.S1, secrets.S3, contentHash)
-}
-
 func calculateChallengeCode(transfollowNumber string, s1 string, s3 string, contentHash string) string {
 	var code string = ""
 	if len(s1) == 0 || len(s3) == 0 || len(contentHash) == 0 || len(transfollowNumber) != 12 {
-		fmt.Println("Missing s1, s3, contentHash and/or transfollowNumber")
+		fmt.Println("Missing transfollowNumber, s1, s3 and/or contentHash")
 		return ""
 	}
 	contentHash = leftPad(contentHash, 5)
@@ -510,7 +488,27 @@ func calculateChallengeCode(transfollowNumber string, s1 string, s3 string, cont
 	code = code + generateVerhoeff(code)
 
 	if len(code) != 25 {
-		fmt.Println("Challenge code somehow isn't 25 digits!")
+		fmt.Println("Challenge code isn't 25 digits.")
+	}
+	return code
+}
+
+func calculateResponseCode(accountNumber string, s2 string, MAC string, contentMAC string) string {
+	var code string = ""
+	if len(s2) == 0 || len(accountNumber) == 0 || len(MAC) == 0 || len(contentMAC) == 0 {
+		fmt.Println("Missing accountNumber, s2, MAC and/or contentMAC")
+		return ""
+	}
+	s2 = leftPad(s2, 3)
+	accountNumber = leftPad(accountNumber, 8)
+	MAC = leftPad(MAC, 8)
+	contentMAC = leftPad(contentMAC, 5)
+
+	code = contentMAC + accountNumber + s2 + MAC
+	code = code + generateVerhoeff(code)
+
+	if len(code) != 25 {
+		fmt.Println("Response code isn't 25 digits.")
 	}
 	return code
 }
@@ -586,6 +584,47 @@ func generateContentHash(transfollownumber string, ctxt []string) string {
 	return withcount[len(withcount)-5 : len(withcount)]
 }
 
+func generateChallengeCode(freightDocument Fd, ttype TransferType) string {
+	secrets := getSecrets(freightDocument, ttype)
+
+	if len(secrets.S1) == 0 {
+		fmt.Println("User does not have the rights to access S1 for this transfer, meaning he is not the carrier of this document")
+		return ""
+	}
+	if len(secrets.S3) == 0 {
+		if ttype == CONSIGNOR_TO_CARRIER {
+			fmt.Println("User does not have the rights to access S3 for this transfer, meaning he is neither the carrier of this document, nor the consignor")
+		} else {
+			fmt.Println("User does not have the rights to access S3 for this transfer, meaning he is neither the carrier of this document, nor the consignee")
+		}
+		return ""
+	}
+
+	comments := gatherComments(freightDocument)
+	contentHash := generateContentHash(freightDocument.TransFollowNumber, comments)
+
+	return calculateChallengeCode(freightDocument.TransFollowNumber, secrets.S1, secrets.S3, contentHash)
+}
+
+func generateResponseCode(freightDocument Fd, ttype TransferType, challengeCode string) string {
+	secrets := getSecrets(freightDocument, ttype)
+
+	if len(secrets.S2) == 0 {
+		if ttype == CONSIGNOR_TO_CARRIER {
+			fmt.Println("User does not have the rights to access S2 for this transfer, meaning he is neither the carrier of this document, nor the consignor")
+		} else {
+			fmt.Println("User does not have the rights to access S2 for this transfer, meaning he is neither the carrier of this document, nor the consignee")
+		}
+		return ""
+	}
+
+	MAC := generateMAC(freightDocument.TransFollowNumber, currentlogin.AccountSecret, 8)
+	contentMAC := generateContentMAC(challengeCode[0:5], freightDocument.TransFollowNumber, currentlogin.AccountSecret)
+
+	return calculateResponseCode(currentlogin.AccountNumber, secrets.S2, MAC, contentMAC)
+}
+
+/*
 func createHashAndMac() {
 	comments := []string{"ant", "dee", "cod", "door"}
 	contenthash := generateContentHash("123456789012", comments)
@@ -593,6 +632,7 @@ func createHashAndMac() {
 	fmt.Println("Ch", contenthash)
 	fmt.Println("Cm", contentmac)
 }
+*/
 
 func login(account Account, refreshtoken string) int {
 	var errors Errs
