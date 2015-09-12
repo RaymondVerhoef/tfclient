@@ -1,9 +1,5 @@
 {
-    "freightDocumentId": "19632",
-    "transFollowNumber": "000000019731",
-    "previousCommits": [
-        "48262"
-    ],
+    "previousCommits": [],
     "references": [
         {
             "referenceId": "38978",
