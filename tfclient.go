@@ -312,26 +312,11 @@ type Fd struct {
 
 // Enums
 
-type TransferType int
-
-const (
-	CONSIGNOR_TO_CARRIER TransferType = 1 + iota
-	TO_OTHER_CARRIER
-	RECEIVE_FROM_OTHER_CARRIER
-	CARRIER_TO_CONSIGNEE
-	UNKNOWN
-)
-
-var transfertypes = [...]string{
-	"CONSIGNOR_TO_CARRIER",
-	"TO_OTHER_CARRIER",
-	"RECEIVE_FROM_OTHER_CARRIER",
-	"CARRIER_TO_CONSIGNEE",
-	"UNKNOWN",
-}
-
-// String returns the name of the TransferType
-func (t TransferType) String() string { return transfertypes[t-1] }
+var CONSIGNOR_TO_CARRIER = "CONSIGNOR_TO_CARRIER"
+var TO_OTHER_CARRIER = "TO_OTHER_CARRIER"
+var RECEIVE_FROM_OTHER_CARRIER = "RECEIVE_FROM_OTHER_CARRIER"
+var CARRIER_TO_CONSIGNEE = "CARRIER_TO_CONSIGNEE"
+var UNKNOWN = "UNKNOWN"
 
 // Globals
 
@@ -448,16 +433,16 @@ func validateVerhoeff(num string) bool {
 	return c == 0
 }
 
-func getSecrets(freightDocument Fd, ttype TransferType) Secrets {
+func getSecrets(freightDocument Fd, ttype string) Secrets {
 
 	var secrets Secrets
 	switch {
-	case ttype == CONSIGNOR_TO_CARRIER:
+	case ttype == "CONSIGNOR_TO_CARRIER":
 		secrets = freightDocument.CollectionSecrets
 		break
-	case ttype == TO_OTHER_CARRIER:
-	case ttype == RECEIVE_FROM_OTHER_CARRIER:
-	case ttype == CARRIER_TO_CONSIGNEE:
+	case ttype == "TO_OTHER_CARRIER":
+	case ttype == "RECEIVE_FROM_OTHER_CARRIER":
+	case ttype == "CARRIER_TO_CONSIGNEE":
 		secrets = freightDocument.DeliverySecrets
 		break
 	}
@@ -584,7 +569,7 @@ func generateContentHash(transfollownumber string, ctxt []string) string {
 	return withcount[len(withcount)-5 : len(withcount)]
 }
 
-func generateChallengeCode(freightDocument Fd, ttype TransferType) string {
+func generateChallengeCode(freightDocument Fd, ttype string) string {
 	secrets := getSecrets(freightDocument, ttype)
 
 	if len(secrets.S1) == 0 {
@@ -592,7 +577,7 @@ func generateChallengeCode(freightDocument Fd, ttype TransferType) string {
 		return ""
 	}
 	if len(secrets.S3) == 0 {
-		if ttype == CONSIGNOR_TO_CARRIER {
+		if ttype == "CONSIGNOR_TO_CARRIER" {
 			fmt.Println("User does not have the rights to access S3 for this transfer, meaning he is neither the carrier of this document, nor the consignor")
 		} else {
 			fmt.Println("User does not have the rights to access S3 for this transfer, meaning he is neither the carrier of this document, nor the consignee")
@@ -606,11 +591,11 @@ func generateChallengeCode(freightDocument Fd, ttype TransferType) string {
 	return calculateChallengeCode(freightDocument.TransFollowNumber, secrets.S1, secrets.S3, contentHash)
 }
 
-func generateResponseCode(freightDocument Fd, ttype TransferType, challengeCode string) string {
+func generateResponseCode(freightDocument Fd, ttype string, challengeCode string) string {
 	secrets := getSecrets(freightDocument, ttype)
 
 	if len(secrets.S2) == 0 {
-		if ttype == CONSIGNOR_TO_CARRIER {
+		if ttype == "CONSIGNOR_TO_CARRIER" {
 			fmt.Println("User does not have the rights to access S2 for this transfer, meaning he is neither the carrier of this document, nor the consignor")
 		} else {
 			fmt.Println("User does not have the rights to access S2 for this transfer, meaning he is neither the carrier of this document, nor the consignee")
@@ -623,16 +608,6 @@ func generateResponseCode(freightDocument Fd, ttype TransferType, challengeCode 
 
 	return calculateResponseCode(currentlogin.AccountNumber, secrets.S2, MAC, contentMAC)
 }
-
-/*
-func createHashAndMac() {
-	comments := []string{"ant", "dee", "cod", "door"}
-	contenthash := generateContentHash("123456789012", comments)
-	contentmac := generateContentMAC(contenthash, "123456789012", "YqjB5RHOmX2CIMHGPJ1RdE4xM8xB3wR4lyCwxvvzcKMDyveTfnAU4rUnMBh5ZI4zKJ44DMFk+TCDkHx0Jy4IpQ==")
-	fmt.Println("Ch", contenthash)
-	fmt.Println("Cm", contentmac)
-}
-*/
 
 func login(account Account, refreshtoken string) int {
 	var errors Errs
@@ -926,6 +901,9 @@ func main() {
 	var currentfd *Fd = nil
 	var currentatt *Attachment = nil
 	var previouscommits []string
+
+	var challengecode string
+	var responsecode string
 
 	argsWithProg := os.Args
 	if len(argsWithProg) > 3 {
@@ -1275,6 +1253,28 @@ func main() {
 					break StepLoop
 				}
 
+			case step.Action == "generatechallengecode":
+
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("Generate challengecode(parms %s)\n", step.Parms)
+				fmt.Println("-----------------------------------------------------------------")
+
+				challengecode = generateChallengeCode(*currentfd, step.Parms)
+
+				fmt.Println("Challengecode:", challengecode)
+
+			case step.Action == "generateresponsecode":
+
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("Generate responseecode(parms %s)\n", step.Parms)
+				fmt.Println("-----------------------------------------------------------------")
+
+				responsecode = generateResponseCode(*currentfd, step.Parms, challengecode)
+
+				fmt.Println("Responsecode:", responsecode)
+
 			case step.Action == "submitcounterpartyapprovaltfa":
 				if len(currentfdid) > 0 {
 					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
@@ -1290,7 +1290,7 @@ func main() {
 						check(err)
 						reqbody := strings.TrimSpace(string(template))
 
-						reqbody = strings.Replace(reqbody, "{{resonsecode}}", step.Parms, 1)
+						reqbody = strings.Replace(reqbody, "{{resonsecode}}", responsecode, 1)
 						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
 						if len(previouscommits) > 0 {
 							pc, err := json.Marshal(previouscommits)
@@ -1389,6 +1389,24 @@ func main() {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
 				}
+
+			case step.Action == "validatecode":
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+
+				template, err := ioutil.ReadFile(step.File)
+				check(err)
+				reqbody := strings.TrimSpace(string(template))
+				reqbody = strings.Replace(reqbody, "{{code}}", step.Obj, 1)
+				if len(currentlogin.AccessToken) > 0 {
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+				}
+				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "genericpost":
 
