@@ -433,7 +433,7 @@ func validateVerhoeff(num string) bool {
 	return c == 0
 }
 
-func getSecrets(freightDocument Fd, ttype string) Secrets {
+func getSecrets(freightDocument *Fd, ttype string) Secrets {
 
 	var secrets Secrets
 	switch {
@@ -449,7 +449,7 @@ func getSecrets(freightDocument Fd, ttype string) Secrets {
 	return secrets
 }
 
-func gatherComments(freightDocument Fd) []string {
+func gatherComments(freightDocument *Fd) []string {
 	var comments []string
 	for i, _ := range freightDocument.Comments {
 		comment := freightDocument.Comments[i].Text
@@ -546,12 +546,11 @@ func generateContentMAC(contenthash string, transfollownumber string, accountsec
 func generateContentHash(transfollownumber string, ctxt []string) string {
 	var content string
 	cnt := len(ctxt)
-	if cnt == 0 {
-		return ""
-	}
-	sort.Strings(ctxt)
-	for i := 0; i < cnt; i++ {
-		content += ctxt[i] + "|"
+	if cnt > 0 {
+		sort.Strings(ctxt)
+		for i := 0; i < cnt; i++ {
+			content += ctxt[i] + "|"
+		}
 	}
 
 	content = content + transfollownumber
@@ -569,7 +568,7 @@ func generateContentHash(transfollownumber string, ctxt []string) string {
 	return withcount[len(withcount)-5 : len(withcount)]
 }
 
-func generateChallengeCode(freightDocument Fd, ttype string) string {
+func generateChallengeCode(freightDocument *Fd, ttype string) string {
 	secrets := getSecrets(freightDocument, ttype)
 
 	if len(secrets.S1) == 0 {
@@ -586,12 +585,13 @@ func generateChallengeCode(freightDocument Fd, ttype string) string {
 	}
 
 	comments := gatherComments(freightDocument)
+	fmt.Println(comments)
 	contentHash := generateContentHash(freightDocument.TransFollowNumber, comments)
 
 	return calculateChallengeCode(freightDocument.TransFollowNumber, secrets.S1, secrets.S3, contentHash)
 }
 
-func generateResponseCode(freightDocument Fd, ttype string, challengeCode string) string {
+func generateResponseCode(freightDocument *Fd, ttype string, challengeCode string) string {
 	secrets := getSecrets(freightDocument, ttype)
 
 	if len(secrets.S2) == 0 {
@@ -1260,7 +1260,7 @@ func main() {
 				fmt.Printf("Generate challengecode(parms %s)\n", step.Parms)
 				fmt.Println("-----------------------------------------------------------------")
 
-				challengecode = generateChallengeCode(*currentfd, step.Parms)
+				challengecode = generateChallengeCode(currentfd, step.Parms)
 
 				fmt.Println("Challengecode:", challengecode)
 
@@ -1268,10 +1268,10 @@ func main() {
 
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
-				fmt.Printf("Generate responseecode(parms %s)\n", step.Parms)
+				fmt.Printf("Generate responsecode(parms %s)\n", step.Parms)
 				fmt.Println("-----------------------------------------------------------------")
 
-				responsecode = generateResponseCode(*currentfd, step.Parms, challengecode)
+				responsecode = generateResponseCode(currentfd, step.Parms, challengecode)
 
 				fmt.Println("Responsecode:", responsecode)
 
@@ -1285,12 +1285,12 @@ func main() {
 				fmt.Println("-----------------------------------------------------------------")
 
 				if len(currentfdid) > 0 {
-					if len(step.Parms) > 0 && len(step.Obj) > 0 {
+					if len(step.Obj) > 0 {
 						template, err := ioutil.ReadFile(step.File)
 						check(err)
 						reqbody := strings.TrimSpace(string(template))
 
-						reqbody = strings.Replace(reqbody, "{{resonsecode}}", responsecode, 1)
+						reqbody = strings.Replace(reqbody, "{{responsecode}}", responsecode, 1)
 						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
 						if len(previouscommits) > 0 {
 							pc, err := json.Marshal(previouscommits)
@@ -1303,7 +1303,7 @@ func main() {
 
 						log.Printf("%s with status %d", timelog, status)
 					} else {
-						fmt.Println("Parms responsecode and/or Obj transfer missing")
+						fmt.Println("Obj transfer missing")
 					}
 				} else {
 					fmt.Println("freightDocumentId is missing")
@@ -1402,7 +1402,13 @@ func main() {
 				template, err := ioutil.ReadFile(step.File)
 				check(err)
 				reqbody := strings.TrimSpace(string(template))
-				reqbody = strings.Replace(reqbody, "{{code}}", step.Obj, 1)
+				reqbody = strings.Replace(reqbody, "{{type}}", step.Obj, 1)
+				if step.Parms == "CHALLENGE" {
+					reqbody = strings.Replace(reqbody, "{{code}}", challengecode, 1)
+				} else {
+					reqbody = strings.Replace(reqbody, "{{code}}", responsecode, 1)
+				}
+
 				if len(currentlogin.AccessToken) > 0 {
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 				}

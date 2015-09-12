@@ -8,6 +8,6 @@
   "action": "{{transfer}}",
   "secondsSinceCreation":0,
   "evidence": {
-    "responseCode": "{{resonsecode}}"
+    "responseCode": "{{responsecode}}"
   }
 }

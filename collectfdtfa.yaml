@@ -18,13 +18,6 @@ steps:
     parms: ""
     url: "/freightdocuments/{{id}}"
   - 
-    action: updatefd
-    file: templates/update_fd.json
-    obj: ""
-    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}]}'
-    url: /freightdocuments/{{id}}	
-  - 
     action: issuefd
     file: ""
     obj: ""
@@ -76,9 +69,9 @@ steps:
   - 
     action: validatecode
     file: templates/validatecode.json
-    obj: ""
-    parms: ""
-    url: "/freightdocuments/{{id}}validatechallengecode"
+    obj: COLLECTION
+    parms: CHALLENGE
+    url: "/freightdocuments/{{id}}/validatechallengecode"
   - 
     action: login
     file: ""
@@ -90,13 +83,13 @@ steps:
     file: templates/counterpartyapprovaltfa.json
     obj: COLLECTION
     parms: ""
-    url: "/freightdocuments/{{id}}/submitmyapproval"
+    url: "/freightdocuments/{{id}}/submitcounterpartyapprovaltfa"
   - 
     action: validatecode
     file: templates/validatecode.json
-    obj: ""
-    parms: ""
-    url: "/freightdocuments/{{id}}validateresponsecode" 
+    obj: COLLECTION
+    parms: RESPONSE
+    url: "/freightdocuments/{{id}}/validateresponsecode" 
   - 
     action: getfd
     file: ""

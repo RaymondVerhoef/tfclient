@@ -1,4 +1,4 @@
-currentfd: 19632
+currentfd: 27194
 steps:
   - 
     action: login
@@ -11,16 +11,34 @@ steps:
     file: ""
     obj: ""
     parms: ""
-    url: "/freightdocuments/{{id}}"	
+    url: "/freightdocuments/{{id}}"
   - 
-    action: submitcounterpartyapprovaltfa
-    file: templates/counterpartyapprovaltfa.json
-    obj: "CARRIER_TO_CARRIER"
-    parms: "0000001234567890123456789"
-    url: "/freightdocuments/{{id}}/submitcounterpartyapprovaltfa"
+    action: generatechallengecode
+    file: ""
+    obj: ""
+    parms: CONSIGNOR_TO_CARRIER
+    url: "" 
+  - 
+    action: login
+    file: ""
+    obj: consignor
+    parms: ""
+    url: ""
   - 
     action: getfd
     file: ""
     obj: ""
     parms: ""
-    url: "/freightdocuments/{{id}}"					
+    url: "/freightdocuments/{{id}}"    
+  - 
+    action: generateresponsecode
+    file: ""
+    obj: ""
+    parms: CONSIGNOR_TO_CARRIER
+    url: ""     
+  - 
+    action: validatecode
+    file: templates/validatecode.json
+    obj: COLLECTION
+    parms: CHALLENGE
+    url: "/freightdocuments/{{id}}/validatechallengecode"
