@@ -56,7 +56,6 @@
     "updates": [],
     "deliveryDate": null,
     "consignor": {
-        "roleId": "174360",
         "name": "CHANGED V. Erzender",
         "streetName": "CHANGED Verzenderstraat",
         "buildingNumber": "CHANGED 1",
@@ -75,7 +74,6 @@
     },
     "placeOfTakingOver": null,
     "carrier": {
-        "roleId": "174361",
         "name": "V. Ervoerder",
         "streetName": "Vervoerderdreef",
         "buildingNumber": "3",
@@ -93,7 +91,6 @@
         "submittedAccountEmailAddress": "frankmob+carrier@gmail.com"
     },
     "consignee": {
-        "roleId": "174359",
         "name": "O. Ntvanger",
         "streetName": "Ontvangerstraat",
         "buildingNumber": "2",

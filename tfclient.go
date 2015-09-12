@@ -934,6 +934,8 @@ func main() {
 	makeAccountStruct(cfg, "consignor", &consignor)
 	makeAccountStruct(cfg, "consignee", &consignee)
 	makeAccountStruct(cfg, "carrier", &carrier)
+	makeAccountStruct(cfg, "delegate_consignor", &delconsignor)
+	makeAccountStruct(cfg, "delegate_consignee", &delconsignee)
 
 	if isOnline(host) {
 		fmt.Println("-----------------------------------------------------------------")
@@ -1110,6 +1112,7 @@ func main() {
 					template, err := ioutil.ReadFile(step.File)
 					check(err)
 					templatestr := strings.TrimSpace(string(template))
+
 					now := time.Now()
 					templatestr = strings.Replace(templatestr, "{{ed}}", now.Format(datelo), 1)
 					templatestr = strings.Replace(templatestr, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
@@ -1138,6 +1141,12 @@ func main() {
 					reqbody = r.ReplaceAllString(reqbody, "\"collectionSecrets\":null")
 					r = regexp.MustCompile(`"deliverySecrets": *(?s)(.*?)\{(.*?)\}`)
 					reqbody = r.ReplaceAllString(reqbody, "\"deliverySecrets\":null")
+					if len(previouscommits) > 0 {
+						pc, err := json.Marshal(previouscommits)
+						check(err)
+						r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
+						reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
+					}
 
 					status, resbytes, timelog = doCall(method, step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 					if status == 201 {

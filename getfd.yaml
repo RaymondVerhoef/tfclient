@@ -12,17 +12,3 @@ steps:
     obj: ""
     parms: ""
     url: "/freightdocuments/{{id}}"
-  - 
-    action: updatefd
-    file: "templates/update_fd_19632.json"
-    obj: ""
-    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}]}'
-    url: /freightdocuments/{{id}}	
-  - 
-    action: getfd
-    file: ""
-    obj: ""
-    parms: ""
-    url: "/freightdocuments/{{id}}"
-	
