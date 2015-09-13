@@ -1,4 +1,3 @@
-currentfd: 19631
 steps:
   - 
     action: login
@@ -7,43 +6,42 @@ steps:
     parms: ""
     url: ""
   - 
+    action: createfd
+    file: "templates/create_fd.json"
+    obj: ""
+    parms: ""
+    url: "/freightdocuments"   
+  - 
     action: getfd
     file: ""
     obj: ""
     parms: ""
     url: "/freightdocuments/{{id}}"
   - 
-    action: updatefd
-    file: templates/update_fd.json
-    obj: ""
-    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}]}'
-    url: /freightdocuments/{{id}}	
-  - 
     action: issuefd
     file: ""
     obj: ""
     parms: ""
-    url: "/freightdocuments/{{id}}/issue"	
+    url: "/freightdocuments/{{id}}/issue"   
   - 
     action: login
     file: ""
     obj: carrier
     parms: ""
-    url: ""	
+    url: "" 
   - 
     action: createcomment
     file: templates/create_comment.json
     obj: ""
     parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
-	  "content":"","type":"REMARKS","sealed":false}]}'
+      "content":"","type":"REMARKS","sealed":false}]}'
     url: /freightdocuments/{{id}}/comments
   - 
     action: getfd
     file: ""
     obj: ""
     parms: ""
-    url: "/freightdocuments/{{id}}"	
+    url: "/freightdocuments/{{id}}"
   - 
     action: submitmyapproval
     file: templates/ownapproval.json
