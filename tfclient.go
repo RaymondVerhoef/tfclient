@@ -1554,6 +1554,12 @@ func main() {
 				}
 				status, resbytes, timelog = createAccount(step.File, *currentaccount)
 				log.Printf("%s with status %d", timelog, status)
+
+			default:
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("Unknown action %s\n", step.Action)
+				fmt.Println("-----------------------------------------------------------------")
 			}
 
 			if len(asserts.Asserts) > 0 {
