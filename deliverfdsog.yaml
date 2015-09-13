@@ -1,4 +1,4 @@
-currentfd: 27209
+currentfd: 27214
 steps:
   - 
     action: login
@@ -23,8 +23,8 @@ steps:
     action: submitcounterpartyapprovalsog
     file: templates/counterpartyapprovalsog.json
     obj: DELIVERY
-    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
-      "content":"","type":"GENERAL","sealed":true}]}'
+    parms: '{"attachments":[{"name":"attachments/signature.jpg","originalFileName":"",
+      "content":""}]}'
     url: "/freightdocuments/{{id}}/submitcounterpartyapprovalsignonglass" 
   - 
     action: submitmyapproval

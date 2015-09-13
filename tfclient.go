@@ -585,7 +585,6 @@ func generateChallengeCode(freightDocument *Fd, ttype string) string {
 	}
 
 	comments := gatherComments(freightDocument)
-	fmt.Println(comments)
 	contentHash := generateContentHash(freightDocument.TransFollowNumber, comments)
 
 	return calculateChallengeCode(freightDocument.TransFollowNumber, secrets.S1, secrets.S3, contentHash)
@@ -775,17 +774,15 @@ func callApi(method string, url string, auth string, reqbody string, partlog int
 			fmt.Println("Status", resp.StatusCode)
 		}
 		if partlog > 0 {
-			response := resbytes
-			/*
-				var dat map[string]interface{}
-
+			//response := resbytes
+			var dat map[string]interface{}
+			if len(resbytes) > 0 {
 				err := json.Unmarshal(resbytes, &dat)
 				check(err)
 
 				response, err := json.MarshalIndent(dat, "", "  ")
 				check(err)
-			*/
-			if len(response) > 0 {
+
 				fmt.Println(" ")
 				fmt.Println(string(response))
 			}
@@ -1036,6 +1033,7 @@ func main() {
 					status, resbytes, timelog = doCall("GET", step.Url, "", "")
 
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("email token missing")
 				}
@@ -1061,6 +1059,7 @@ func main() {
 						}
 					}
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("freightDocumentId missing")
 				}
@@ -1086,6 +1085,7 @@ func main() {
 						fmt.Printf("FD %s with Att %s\n", currentfdid, currentattid)
 					}
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("freightDocumentId and/or attachmentId missing")
 				}
@@ -1130,6 +1130,7 @@ func main() {
 				if len(currentfdid) > 0 {
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, "")
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
@@ -1175,6 +1176,7 @@ func main() {
 						}
 					}
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("New freightDocument content is missing")
 					break StepLoop
@@ -1225,6 +1227,7 @@ func main() {
 						}
 					}
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("Updated freightDocument content is missing")
 					break StepLoop
@@ -1247,6 +1250,7 @@ func main() {
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
@@ -1280,6 +1284,7 @@ func main() {
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
@@ -1306,6 +1311,7 @@ func main() {
 						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
 						log.Printf("%s with status %d", timelog, status)
+						fmt.Printf("%s\n", timelog)
 					} else {
 						fmt.Println("Parms role and/or Obj transfer missing")
 					}
@@ -1358,6 +1364,7 @@ func main() {
 						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
 						log.Printf("%s with status %d", timelog, status)
+						fmt.Printf("%s\n", timelog)
 					} else {
 						fmt.Println("Obj transfer missing")
 					}
@@ -1387,10 +1394,12 @@ func main() {
 
 						attachments = makeNewAttachments(step.Parms)
 						if len(attachments) > 0 {
-							att, err := json.MarshalIndent(attachments, "", "  ")
+							att, err := json.Marshal(attachments)
 							check(err)
-							atts := strings.Replace(string(att), ",\"type\":\"GENERAL\"", "", 1)
+							atts := strings.Replace(string(att), ",\"type\":\"SIGNONGLASS\"", "", 1)
+							atts = strings.Replace(string(att), ",\"type\":\"\"", "", 1)
 							atts = strings.Replace(atts, ",\"sealed\":true", "", 1)
+							atts = strings.Replace(atts, ",\"sealed\":false", "", 1)
 							atts = strings.Replace(atts, ",\"size\":0", "", 1)
 							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
 							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+atts)
@@ -1399,6 +1408,7 @@ func main() {
 						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
 						log.Printf("%s with status %d", timelog, status)
+						fmt.Printf("%s\n", timelog)
 					} else {
 						fmt.Println("Parms image file and/or Obj transfer missing")
 					}
@@ -1424,6 +1434,7 @@ func main() {
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
 					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
@@ -1450,6 +1461,7 @@ func main() {
 						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
 						log.Printf("%s with status %d", timelog, status)
+						fmt.Printf("%s\n", timelog)
 					} else {
 						fmt.Println("Obj newstatus missing")
 					}
@@ -1481,6 +1493,7 @@ func main() {
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 				}
 				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "genericpost":
 
@@ -1498,6 +1511,7 @@ func main() {
 					status, resbytes, timelog = doCall("POST", step.Url, "", reqbody)
 				}
 				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "login":
 				fmt.Println("-----------------------------------------------------------------")
@@ -1554,6 +1568,7 @@ func main() {
 				}
 				status, resbytes, timelog = createAccount(step.File, *currentaccount)
 				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			default:
 				fmt.Println("-----------------------------------------------------------------")

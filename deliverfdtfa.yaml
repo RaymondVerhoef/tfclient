@@ -1,4 +1,4 @@
-currentfd: 27197
+currentfd: 27216
 steps:
   - 
     action: login
@@ -97,3 +97,10 @@ steps:
     obj: ""
     parms: ""
     url: "/freightdocuments/{{id}}" 
+  - 
+    action: createcomment
+    file: templates/create_comment.json
+    obj: ""
+    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
+      "content":"","type":"REMARKS","sealed":false}]}'
+    url: /freightdocuments/{{id}}/comments    
