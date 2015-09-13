@@ -1,28 +1,5 @@
+currentfd: 27197
 steps:
-  - 
-    action: login
-    file: ""
-    obj: submitter
-    parms: ""
-    url: ""
-  - 
-    action: createfd
-    file: "templates/create_fd.json"
-    obj: ""
-    parms: ""
-    url: "/freightdocuments"   
-  - 
-    action: getfd
-    file: ""
-    obj: ""
-    parms: ""
-    url: "/freightdocuments/{{id}}"
-  - 
-    action: issuefd
-    file: ""
-    obj: ""
-    parms: ""
-    url: "/freightdocuments/{{id}}/issue"	
   - 
     action: login
     file: ""
@@ -46,12 +23,12 @@ steps:
     action: generatechallengecode
     file: ""
     obj: ""
-    parms: CONSIGNOR_TO_CARRIER
+    parms: CARRIER_TO_CONSIGNEE
     url: "" 
   - 
     action: login
     file: ""
-    obj: consignor
+    obj: consignee
     parms: ""
     url: ""
   - 
@@ -64,12 +41,12 @@ steps:
     action: generateresponsecode
     file: ""
     obj: ""
-    parms: CONSIGNOR_TO_CARRIER
+    parms: CARRIER_TO_CONSIGNEE
     url: ""     
   - 
     action: validatecode
     file: templates/validatecode.json
-    obj: COLLECTION
+    obj: DELIVERY
     parms: CHALLENGE
     url: "/freightdocuments/{{id}}/validatechallengecode"
   - 
@@ -81,13 +58,13 @@ steps:
   - 
     action: submitcounterpartyapprovaltfa
     file: templates/counterpartyapprovaltfa.json
-    obj: COLLECTION
+    obj: DELIVERY
     parms: ""
     url: "/freightdocuments/{{id}}/submitcounterpartyapprovaltfa"
   - 
     action: validatecode
     file: templates/validatecode.json
-    obj: COLLECTION
+    obj: DELIVERY
     parms: RESPONSE
     url: "/freightdocuments/{{id}}/validateresponsecode" 
   - 
@@ -99,19 +76,19 @@ steps:
   - 
     action: submitmyapproval
     file: templates/ownapproval.json
-    obj: COLLECTION
+    obj: DELIVERY
     parms: CARRIER
     url: "/freightdocuments/{{id}}/submitmyapproval"
   - 
     action: updatestatus
     file: templates/statusupdate.json
-    obj: TRANSIT
+    obj: DELIVERED
     parms: ""
     url: "/freightdocuments/{{id}}/updatestatus"	
   - 
     action: login
     file: ""
-    obj: consignor
+    obj: consignee
     parms: ""
     url: ""
   - 
@@ -119,10 +96,4 @@ steps:
     file: ""
     obj: ""
     parms: ""
-    url: "/freightdocuments/{{id}}"     
-  - 
-    action: submitproofoftransfer
-    file: templates/proofoftransfer.json
-    obj: ""
-    parms: ""
-    url: "/freightdocuments/{{id}}/submitproofoftransfer" 
+    url: "/freightdocuments/{{id}}" 

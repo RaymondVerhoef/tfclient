@@ -775,14 +775,16 @@ func callApi(method string, url string, auth string, reqbody string, partlog int
 			fmt.Println("Status", resp.StatusCode)
 		}
 		if partlog > 0 {
-			var dat map[string]interface{}
+			response := resbytes
+			/*
+				var dat map[string]interface{}
 
-			err := json.Unmarshal(resbytes, &dat)
-			check(err)
+				err := json.Unmarshal(resbytes, &dat)
+				check(err)
 
-			response, err := json.MarshalIndent(dat, "", "  ")
-			check(err)
-
+				response, err := json.MarshalIndent(dat, "", "  ")
+				check(err)
+			*/
 			if len(response) > 0 {
 				fmt.Println(" ")
 				fmt.Println(string(response))
@@ -1400,6 +1402,28 @@ func main() {
 					} else {
 						fmt.Println("Parms image file and/or Obj transfer missing")
 					}
+				} else {
+					fmt.Println("freightDocumentId is missing")
+					break StepLoop
+				}
+
+			case step.Action == "submitproofoftransfer":
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				}
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("POST %s with file %s\n", step.Url, step.File)
+				fmt.Println("-----------------------------------------------------------------")
+
+				if len(currentfdid) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
+					reqbody = strings.Replace(reqbody, "{{proof}}", challengecode[len(challengecode)-8:len(challengecode)-4], 1)
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+
+					log.Printf("%s with status %d", timelog, status)
 				} else {
 					fmt.Println("freightDocumentId is missing")
 					break StepLoop
