@@ -658,9 +658,17 @@ func login(account Account, refreshtoken string) int {
 
 		fmt.Println("RESPONSE")
 		fmt.Println("Status", resp.StatusCode)
-		if len(string(resbytes)) > 0 {
+
+		var dat map[string]interface{}
+		err := json.Unmarshal(resbytes, &dat)
+		check(err)
+
+		response, err := json.MarshalIndent(dat, "", "  ")
+		check(err)
+
+		if len(response) > 0 {
 			fmt.Println(" ")
-			fmt.Println(string(resbytes))
+			fmt.Println(string(response))
 		}
 
 	}
@@ -767,9 +775,17 @@ func callApi(method string, url string, auth string, reqbody string, partlog int
 			fmt.Println("Status", resp.StatusCode)
 		}
 		if partlog > 0 {
-			if len(string(resbytes)) > 0 {
+			var dat map[string]interface{}
+
+			err := json.Unmarshal(resbytes, &dat)
+			check(err)
+
+			response, err := json.MarshalIndent(dat, "", "  ")
+			check(err)
+
+			if len(response) > 0 {
 				fmt.Println(" ")
-				fmt.Println(string(resbytes))
+				fmt.Println(string(response))
 			}
 		}
 	}
@@ -871,6 +887,28 @@ func checkAttachments(old []Attachment, new []Attachment, remove bool) []Attachm
 	return attachments
 }
 
+func removeUnwantedAttributes(reqbody string) string {
+	r := regexp.MustCompile(`"submitterAccountId": *(?s)(.*?)\"(.*?)\"`)
+	reqbody = r.ReplaceAllString(reqbody, "\"submitterAccountId\":null")
+	r = regexp.MustCompile(`"lastModifiedDateTime": *(?s)(.*?)\"(.*?)\"`)
+	reqbody = r.ReplaceAllString(reqbody, "\"lastModifiedDateTime\":null")
+	r = regexp.MustCompile(`"collectionSecrets": *(?s)(.*?)\{(.*?)\}`)
+	reqbody = r.ReplaceAllString(reqbody, "\"collectionSecrets\":null")
+	r = regexp.MustCompile(`"deliverySecrets": *(?s)(.*?)\{(.*?)\}`)
+	reqbody = r.ReplaceAllString(reqbody, "\"deliverySecrets\":null")
+	return reqbody
+}
+
+func replacePreviousCommits(reqbody string, previouscommits []string) string {
+	if len(previouscommits) > 0 {
+		pc, err := json.Marshal(previouscommits)
+		check(err)
+		r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
+		reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
+	}
+	return reqbody
+}
+
 func parseConfigString(cfg_str string) (*config.Config, error) {
 	var err error
 	var cfg *config.Config
@@ -966,6 +1004,9 @@ func main() {
 			}
 
 			switch {
+			case step.Action == "break":
+				break StepLoop
+
 			case step.Action == "genericget":
 
 				fmt.Println("-----------------------------------------------------------------")
@@ -1092,21 +1133,61 @@ func main() {
 					break StepLoop
 				}
 
-			case step.Action == "createfd" || step.Action == "updatefd":
+			case step.Action == "createfd":
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
+				fmt.Println("-----------------------------------------------------------------")
+				if len(step.File) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					templatestr := strings.TrimSpace(string(template))
+
+					now := time.Now()
+					templatestr = strings.Replace(templatestr, "{{ed}}", now.Format(datelo), 1)
+					templatestr = strings.Replace(templatestr, "{{adt}}", now.Add(24*time.Hour).Format(datelo), 1)
+					templatestr = strings.Replace(templatestr, "{{edtt}}", now.Add(24*time.Hour).Format(timelo), 1)
+					templatestr = strings.Replace(templatestr, "{{edtd}}", now.Add(48*time.Hour).Format(timelo), 1)
+					jsonerr := json.Unmarshal([]byte(templatestr), &currentfd)
+					check(jsonerr)
+				}
+
+				if currentfd != nil {
+
+					if len(step.Parms) > 0 {
+						parmsattachments := makeNewAttachments(step.Parms)
+						currentfd.Attachments = append(currentfd.Attachments, parmsattachments...)
+					}
+
+					newfdjson, _ := json.MarshalIndent(currentfd, "", "  ")
+					reqbody := removeUnwantedAttributes(string(newfdjson))
+
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+					if status == 201 {
+						result, err := config.ParseJson(string(resbytes))
+						check(err)
+						currentfdid, err = result.String("freightDocumentId")
+						check(err)
+						if len(currentfdid) > 0 {
+							fmt.Printf("new FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfdid)
+						}
+					}
+					log.Printf("%s with status %d", timelog, status)
+				} else {
+					fmt.Println("New freightDocument content is missing")
+					break StepLoop
+				}
+
+			case step.Action == "updatefd":
 				var oldattachments []Attachment
 				var newattachments []Attachment
-				var method = "PUT"
 
-				if step.Action == "createfd" {
-					method = "POST"
-				} else {
-					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
-					oldattachments = currentfd.Attachments
-				}
+				step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				oldattachments = currentfd.Attachments
 
 				fmt.Println("-----------------------------------------------------------------")
 				fmt.Println("Step", i+1)
-				fmt.Printf("%s %s with file %s (parms %s subj %s)\n", method, step.Url, step.File, step.Parms, step.Obj)
+				fmt.Printf("PUT %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 				if len(step.File) > 0 {
 					template, err := ioutil.ReadFile(step.File)
@@ -1131,40 +1212,19 @@ func main() {
 					currentfd.Attachments = checkAttachments(oldattachments, newattachments, false)
 					currentfd.Attachments = append(currentfd.Attachments, newattachments...)
 
-					newfdjson, _ := json.Marshal(currentfd)
-					reqbody := string(newfdjson)
-					r := regexp.MustCompile(`"submitterAccountId": *(?s)(.*?)\"(.*?)\"`)
-					reqbody = r.ReplaceAllString(reqbody, "\"submitterAccountId\":null")
-					r = regexp.MustCompile(`"lastModifiedDateTime": *(?s)(.*?)\"(.*?)\"`)
-					reqbody = r.ReplaceAllString(reqbody, "\"lastModifiedDateTime\":null")
-					r = regexp.MustCompile(`"collectionSecrets": *(?s)(.*?)\{(.*?)\}`)
-					reqbody = r.ReplaceAllString(reqbody, "\"collectionSecrets\":null")
-					r = regexp.MustCompile(`"deliverySecrets": *(?s)(.*?)\{(.*?)\}`)
-					reqbody = r.ReplaceAllString(reqbody, "\"deliverySecrets\":null")
-					if len(previouscommits) > 0 {
-						pc, err := json.Marshal(previouscommits)
-						check(err)
-						r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
-						reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
-					}
+					newfdjson, _ := json.MarshalIndent(currentfd, "", "  ")
+					reqbody := removeUnwantedAttributes(string(newfdjson))
+					reqbody = replacePreviousCommits(reqbody, previouscommits)
 
-					status, resbytes, timelog = doCall(method, step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
-					if status == 201 {
-						result, err := config.ParseJson(string(resbytes))
-						check(err)
-						currentfdid, err = result.String("freightDocumentId")
-						check(err)
-						if len(currentfdid) > 0 {
-							fmt.Printf("new FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfdid)
-						}
-					} else if status == 205 {
+					status, resbytes, timelog = doCall("PUT", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+					if status == 205 {
 						if len(currentfdid) > 0 {
 							fmt.Printf("changed FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfdid)
 						}
 					}
 					log.Printf("%s with status %d", timelog, status)
 				} else {
-					fmt.Println("freightDocument content is missing")
+					fmt.Println("Updated freightDocument content is missing")
 					break StepLoop
 				}
 
@@ -1204,17 +1264,12 @@ func main() {
 					template, err := ioutil.ReadFile(step.File)
 					check(err)
 					reqbody := strings.TrimSpace(string(template))
-					if len(previouscommits) > 0 {
-						pc, err := json.Marshal(previouscommits)
-						check(err)
-						r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
-						reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
-					}
+					reqbody = replacePreviousCommits(reqbody, previouscommits)
 
 					if len(step.Parms) > 0 {
 						attachments = makeNewAttachments(step.Parms)
 						if len(attachments) > 0 {
-							att, err := json.Marshal(attachments)
+							att, err := json.MarshalIndent(attachments, "", "  ")
 							check(err)
 							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
 							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(att))
@@ -1244,12 +1299,7 @@ func main() {
 						reqbody := strings.TrimSpace(string(template))
 						reqbody = strings.Replace(reqbody, "{{ownrole}}", step.Parms, 1)
 						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
-						if len(previouscommits) > 0 {
-							pc, err := json.Marshal(previouscommits)
-							check(err)
-							r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
-						}
+						reqbody = replacePreviousCommits(reqbody, previouscommits)
 
 						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
@@ -1301,12 +1351,7 @@ func main() {
 
 						reqbody = strings.Replace(reqbody, "{{responsecode}}", responsecode, 1)
 						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
-						if len(previouscommits) > 0 {
-							pc, err := json.Marshal(previouscommits)
-							check(err)
-							r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
-						}
+						reqbody = replacePreviousCommits(reqbody, previouscommits)
 
 						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
@@ -1336,16 +1381,11 @@ func main() {
 						reqbody := strings.TrimSpace(string(template))
 
 						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
-						if len(previouscommits) > 0 {
-							pc, err := json.Marshal(previouscommits)
-							check(err)
-							r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
-						}
+						reqbody = replacePreviousCommits(reqbody, previouscommits)
 
 						attachments = makeNewAttachments(step.Parms)
 						if len(attachments) > 0 {
-							att, err := json.Marshal(attachments)
+							att, err := json.MarshalIndent(attachments, "", "  ")
 							check(err)
 							atts := strings.Replace(string(att), ",\"type\":\"GENERAL\"", "", 1)
 							atts = strings.Replace(atts, ",\"sealed\":true", "", 1)
@@ -1381,12 +1421,7 @@ func main() {
 						reqbody := strings.TrimSpace(string(template))
 
 						reqbody = strings.Replace(reqbody, "{{newstatus}}", step.Obj, 1)
-						if len(previouscommits) > 0 {
-							pc, err := json.Marshal(previouscommits)
-							check(err)
-							r := regexp.MustCompile(`"previousCommits": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"previousCommits\": "+string(pc))
-						}
+						reqbody = replacePreviousCommits(reqbody, previouscommits)
 
 						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
