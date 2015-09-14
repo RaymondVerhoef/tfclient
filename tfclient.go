@@ -528,7 +528,6 @@ func generateMAC(TFN string, secret string, length int) string {
 	sha1.Write([]byte(ktfn))
 
 	ksha := append(opadKey, sha1.Sum(nil)...)
-
 	sha2 := sha256.New()
 	sha2.Write([]byte(ksha))
 
