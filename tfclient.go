@@ -310,7 +310,7 @@ type Fd struct {
 	Updates                       []Update        `json:"updates"`
 }
 
-// Enums
+// Enums and Const
 
 var CONSIGNOR_TO_CARRIER = "CONSIGNOR_TO_CARRIER"
 var TO_OTHER_CARRIER = "TO_OTHER_CARRIER"
@@ -607,6 +607,18 @@ func generateResponseCode(freightDocument *Fd, ttype string, challengeCode strin
 	return calculateResponseCode(currentlogin.AccountNumber, secrets.S2, MAC, contentMAC)
 }
 
+func prettyJson(resbytes []byte) []byte {
+	var dat map[string]interface{}
+	var prettyjson = []byte{}
+	if len(resbytes) > 0 {
+		err := json.Unmarshal(resbytes, &dat)
+		check(err)
+		prettyjson, err = json.MarshalIndent(dat, "", "  ")
+		check(err)
+	}
+	return prettyjson
+}
+
 func login(account Account, refreshtoken string) int {
 	var errors Errs
 	if refreshtoken == "" && (account.Name == "" || account.Password == "") {
@@ -657,12 +669,7 @@ func login(account Account, refreshtoken string) int {
 		fmt.Println("RESPONSE")
 		fmt.Println("Status", resp.StatusCode)
 
-		var dat map[string]interface{}
-		err := json.Unmarshal(resbytes, &dat)
-		check(err)
-
-		response, err := json.MarshalIndent(dat, "", "  ")
-		check(err)
+		response := prettyJson(resbytes)
 
 		if len(response) > 0 {
 			fmt.Println(" ")
@@ -675,7 +682,7 @@ func login(account Account, refreshtoken string) int {
 		check(jsonerr)
 		if refreshtoken == "" {
 			url := "/accounts/users/me"
-			status, resbytes, _ = callApi("GET", url, "Bearer "+currentlogin.AccessToken, "", 0)
+			status, resbytes, _ = callApi("GET", url, "Bearer "+currentlogin.AccessToken, "", 1)
 			if status == 200 {
 				jsonerr = json.Unmarshal(resbytes, &currentlogin)
 				check(jsonerr)
@@ -745,10 +752,14 @@ func callApi(method string, url string, auth string, reqbody string, partlog int
 		}
 	}
 	client := &http.Client{}
+
 	start := time.Now()
+
 	resp, err := client.Do(req)
 	check(err)
 	defer resp.Body.Close()
+
+	elapsed := time.Since(start)
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 500 {
 		resbytes, _ = ioutil.ReadAll(resp.Body)
@@ -773,22 +784,15 @@ func callApi(method string, url string, auth string, reqbody string, partlog int
 			fmt.Println("Status", resp.StatusCode)
 		}
 		if partlog > 0 {
-			//response := resbytes
-			var dat map[string]interface{}
-			if len(resbytes) > 0 {
-				err := json.Unmarshal(resbytes, &dat)
-				check(err)
+			response := prettyJson(resbytes)
 
-				response, err := json.MarshalIndent(dat, "", "  ")
-				check(err)
-
+			if len(response) > 0 {
 				fmt.Println(" ")
 				fmt.Println(string(response))
 			}
 		}
 	}
 
-	elapsed := time.Since(start)
 	timelog := fmt.Sprintf("%s %s in %d ms.", method, url, elapsed/time.Millisecond)
 
 	return resp.StatusCode, resbytes, timelog

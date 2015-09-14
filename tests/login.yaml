@@ -1,0 +1,8 @@
+steps:
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+    asserts: '{"asserts":[{"status":[201]}]}'
