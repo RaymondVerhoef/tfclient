@@ -21,16 +21,14 @@ steps:
     action: createfd
     file: templates/create_fd.json
     obj: ""
-    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}]}'
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"","content":"","type":"GENERAL","sealed":true}]}'
     url: /freightdocuments
   - 
     action: updatefd
     file: templates/update_fd.json
     obj: ""
-    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"GENERAL","sealed":true}]}'
-    url: /freightdocuments/{{id}}		
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"", "content":"","type":"GENERAL","sealed":true}]}'
+    url: /freightdocuments/{{id}}
   - 
     action: login
     file: ""
@@ -53,6 +51,5 @@ steps:
     action: createcomment
     file: templates/create_comment.json
     obj: ""
-    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"",
-	  "content":"","type":"REMARKS","sealed":false}]}'
-    url: /freightdocuments/{{id}}/comments			
+    parms: '{"attachments":[{"name":"attachments/img.png","originalFileName":"","content":"","type":"REMARKS","sealed":false}]}'
+    url: /freightdocuments/{{id}}/comments

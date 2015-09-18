@@ -983,15 +983,21 @@ func main() {
 		clientid, _ = env.String("client.id")
 		clientsecret, _ = env.String("client.secret")
 
+		session_string, err := ioutil.ReadFile("session.yaml")
+		if err == nil {
+			session_str := strings.TrimSpace(string(session_string))
+			sessioncfg, err := parseConfigString(session_str)
+			check(err)
+			currentfdid, _ = sessioncfg.String("currentfdid")
+			currentattid, _ = sessioncfg.String("currentattid")
+		}
+
 		step_string, err := ioutil.ReadFile(stepfile)
 		step_str := strings.TrimSpace(string(step_string))
 		check(err)
-
 		stepcfg, err := parseConfigString(step_str)
 		steps, _ := stepcfg.Get("steps")
 		check(err)
-		currentfdid, _ = stepcfg.String("currentfd")
-		currentattid, _ = stepcfg.String("currentatt")
 
 	StepLoop:
 		for i, stepmap := range steps.Root.([]interface{}) {
@@ -1588,9 +1594,15 @@ func main() {
 			}
 
 		}
+
 		fmt.Println("-----------------------------------------------------------------")
 		fmt.Println("End scenario")
 		fmt.Println("-----------------------------------------------------------------")
+
+		yaml := fmt.Sprintf("currentfdid: \"%s\"\ncurrentattid: \"%s\"\n", currentfdid, currentattid)
+		session := []byte(yaml)
+		err = ioutil.WriteFile("session.yaml", session, 0644)
+		check(err)
 
 	} else {
 		fmt.Println("Offline host:", host)

@@ -1,4 +1,3 @@
-currentfd: 27214
 steps:
   - 
     action: login
@@ -10,8 +9,7 @@ steps:
     action: createcomment
     file: templates/create_comment.json
     obj: ""
-    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
-      "content":"","type":"REMARKS","sealed":false}]}'
+    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"","content":"","type":"REMARKS","sealed":false}]}'
     url: /freightdocuments/{{id}}/comments
   - 
     action: getfd
@@ -23,8 +21,7 @@ steps:
     action: submitcounterpartyapprovalsog
     file: templates/counterpartyapprovalsog.json
     obj: DELIVERY
-    parms: '{"attachments":[{"name":"attachments/signature.jpg","originalFileName":"",
-      "content":""}]}'
+    parms: '{"attachments":[{"name":"attachments/signature.jpg","originalFileName":"","content":""}]}'
     url: "/freightdocuments/{{id}}/submitcounterpartyapprovalsignonglass" 
   - 
     action: submitmyapproval

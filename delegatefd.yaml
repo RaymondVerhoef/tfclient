@@ -1,4 +1,3 @@
-currentfd: 19632
 steps:
   - 
     action: login
