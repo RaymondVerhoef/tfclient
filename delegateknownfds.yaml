@@ -1,0 +1,19 @@
+steps:
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: ""
+  - 
+    action: delegatefd
+    file: templates/delegate_fd.json
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/1/delegate"
+  - 
+    action: delegatefd
+    file: templates/delegate_fd.json
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/2/delegate"

@@ -1055,23 +1055,20 @@ func main() {
 				fmt.Println("Step", i+1)
 				fmt.Printf("GET %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
-				if len(currentfdid) > 0 {
-					status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
-					if status == 200 {
-						jsonerr := json.Unmarshal(resbytes, &currentfd)
-						check(jsonerr)
-						currentfdid = currentfd.FreightDocumentID
-						previouscommits = currentfd.PreviousCommits
 
-						if len(currentfdid) > 0 {
-							fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
-						}
+				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
+				if status == 200 {
+					jsonerr := json.Unmarshal(resbytes, &currentfd)
+					check(jsonerr)
+					currentfdid = currentfd.FreightDocumentID
+					previouscommits = currentfd.PreviousCommits
+
+					if len(currentfdid) > 0 {
+						fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
 					}
-					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
-				} else {
-					fmt.Println("freightDocumentId missing")
 				}
+				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "getfdatt" || step.Action == "getatt":
 				if len(currentfdid) > 0 {
@@ -1084,20 +1081,17 @@ func main() {
 				fmt.Println("Step", i+1)
 				fmt.Printf("GET %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
-				if len(currentfdid) > 0 && len(currentattid) > 0 {
-					status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
-					if status == 200 {
-						jsonerr := json.Unmarshal(resbytes, &currentatt)
-						check(jsonerr)
-						currentattid = currentatt.AttachmentId
 
-						fmt.Printf("FD %s with Att %s\n", currentfdid, currentattid)
-					}
-					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
-				} else {
-					fmt.Println("freightDocumentId and/or attachmentId missing")
+				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
+				if status == 200 {
+					jsonerr := json.Unmarshal(resbytes, &currentatt)
+					check(jsonerr)
+					currentattid = currentatt.AttachmentId
+
+					fmt.Printf("FD %s with Att %s\n", currentfdid, currentattid)
 				}
+				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "getfdresponsecode":
 				if len(currentfdid) > 0 {
@@ -1110,23 +1104,19 @@ func main() {
 				fmt.Println("Step", i+1)
 				fmt.Printf("GET %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
-				if len(currentfdid) > 0 && len(step.Obj) > 0 {
-					status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
-					if status == 200 {
-						jsonerr := json.Unmarshal(resbytes, &currentfd)
-						check(jsonerr)
-						currentfdid = currentfd.FreightDocumentID
-						previouscommits = currentfd.PreviousCommits
 
-						if len(currentfdid) > 0 {
-							fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
-						}
+				status, resbytes, timelog = doCall("GET", step.Url, "Bearer "+currentlogin.AccessToken, "")
+				if status == 200 {
+					jsonerr := json.Unmarshal(resbytes, &currentfd)
+					check(jsonerr)
+					currentfdid = currentfd.FreightDocumentID
+					previouscommits = currentfd.PreviousCommits
+
+					if len(currentfdid) > 0 {
+						fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
 					}
-					log.Printf("%s with status %d", timelog, status)
-				} else {
-					fmt.Println("freightDocumentId and/or Obj transfertype missing")
-					break StepLoop
 				}
+				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "issuefd":
 				if len(currentfdid) > 0 {
@@ -1136,14 +1126,10 @@ func main() {
 				fmt.Println("Step", i+1)
 				fmt.Printf("POST %s \n", step.Url)
 				fmt.Println("-----------------------------------------------------------------")
-				if len(currentfdid) > 0 {
-					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, "")
-					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
-				} else {
-					fmt.Println("freightDocumentId is missing")
-					break StepLoop
-				}
+
+				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, "")
+				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "createfd":
 				fmt.Println("-----------------------------------------------------------------")
@@ -1195,7 +1181,9 @@ func main() {
 				var oldattachments []Attachment
 				var newattachments []Attachment
 
-				step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				if len(currentfdid) > 0 {
+					step.Url = strings.Replace(step.Url, "{{id}}", currentfdid, 1)
+				}
 				oldattachments = currentfd.Attachments
 
 				fmt.Println("-----------------------------------------------------------------")
@@ -1251,19 +1239,14 @@ func main() {
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfdid) > 0 {
-					template, err := ioutil.ReadFile(step.File)
-					check(err)
-					reqbody := strings.TrimSpace(string(template))
+				template, err := ioutil.ReadFile(step.File)
+				check(err)
+				reqbody := strings.TrimSpace(string(template))
 
-					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
-					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
-				} else {
-					fmt.Println("freightDocumentId is missing")
-					break StepLoop
-				}
+				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "createcomment":
 				var attachments []Attachment
@@ -1275,29 +1258,24 @@ func main() {
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfdid) > 0 {
-					template, err := ioutil.ReadFile(step.File)
-					check(err)
-					reqbody := strings.TrimSpace(string(template))
-					reqbody = replacePreviousCommits(reqbody, previouscommits)
+				template, err := ioutil.ReadFile(step.File)
+				check(err)
+				reqbody := strings.TrimSpace(string(template))
+				reqbody = replacePreviousCommits(reqbody, previouscommits)
 
-					if len(step.Parms) > 0 {
-						attachments = makeNewAttachments(step.Parms)
-						if len(attachments) > 0 {
-							att, err := json.MarshalIndent(attachments, "", "  ")
-							check(err)
-							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(att))
-						}
+				if len(step.Parms) > 0 {
+					attachments = makeNewAttachments(step.Parms)
+					if len(attachments) > 0 {
+						att, err := json.MarshalIndent(attachments, "", "  ")
+						check(err)
+						r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
+						reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+string(att))
 					}
-					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
-
-					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
-				} else {
-					fmt.Println("freightDocumentId is missing")
-					break StepLoop
 				}
+				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+
+				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "submitmyapproval":
 				if len(currentfdid) > 0 {
@@ -1308,25 +1286,20 @@ func main() {
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfdid) > 0 {
-					if len(step.Parms) > 0 && len(step.Obj) > 0 {
-						template, err := ioutil.ReadFile(step.File)
-						check(err)
-						reqbody := strings.TrimSpace(string(template))
-						reqbody = strings.Replace(reqbody, "{{ownrole}}", step.Parms, 1)
-						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
-						reqbody = replacePreviousCommits(reqbody, previouscommits)
+				if len(step.Parms) > 0 && len(step.Obj) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
+					reqbody = strings.Replace(reqbody, "{{ownrole}}", step.Parms, 1)
+					reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
+					reqbody = replacePreviousCommits(reqbody, previouscommits)
 
-						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
-						log.Printf("%s with status %d", timelog, status)
-						fmt.Printf("%s\n", timelog)
-					} else {
-						fmt.Println("Parms role and/or Obj transfer missing")
-					}
+					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
-					fmt.Println("freightDocumentId is missing")
-					break StepLoop
+					fmt.Println("Parms role and/or Obj transfer missing")
 				}
 
 			case step.Action == "generatechallengecode":
@@ -1360,26 +1333,21 @@ func main() {
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfdid) > 0 {
-					if len(step.Obj) > 0 {
-						template, err := ioutil.ReadFile(step.File)
-						check(err)
-						reqbody := strings.TrimSpace(string(template))
+				if len(step.Obj) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
 
-						reqbody = strings.Replace(reqbody, "{{responsecode}}", responsecode, 1)
-						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
-						reqbody = replacePreviousCommits(reqbody, previouscommits)
+					reqbody = strings.Replace(reqbody, "{{responsecode}}", responsecode, 1)
+					reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
+					reqbody = replacePreviousCommits(reqbody, previouscommits)
 
-						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
-						log.Printf("%s with status %d", timelog, status)
-						fmt.Printf("%s\n", timelog)
-					} else {
-						fmt.Println("Obj transfer missing")
-					}
+					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
-					fmt.Println("freightDocumentId is missing")
-					break StepLoop
+					fmt.Println("Obj transfer missing")
 				}
 
 			case step.Action == "submitcounterpartyapprovalsog":
@@ -1392,38 +1360,33 @@ func main() {
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfdid) > 0 {
-					if len(step.Parms) > 0 && len(step.Obj) > 0 {
-						template, err := ioutil.ReadFile(step.File)
+				if len(step.Parms) > 0 && len(step.Obj) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
+
+					reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
+					reqbody = replacePreviousCommits(reqbody, previouscommits)
+
+					attachments = makeNewAttachments(step.Parms)
+					if len(attachments) > 0 {
+						att, err := json.Marshal(attachments)
 						check(err)
-						reqbody := strings.TrimSpace(string(template))
-
-						reqbody = strings.Replace(reqbody, "{{transfer}}", step.Obj, 1)
-						reqbody = replacePreviousCommits(reqbody, previouscommits)
-
-						attachments = makeNewAttachments(step.Parms)
-						if len(attachments) > 0 {
-							att, err := json.Marshal(attachments)
-							check(err)
-							atts := strings.Replace(string(att), ",\"type\":\"SIGNONGLASS\"", "", 1)
-							atts = strings.Replace(string(att), ",\"type\":\"\"", "", 1)
-							atts = strings.Replace(atts, ",\"sealed\":true", "", 1)
-							atts = strings.Replace(atts, ",\"sealed\":false", "", 1)
-							atts = strings.Replace(atts, ",\"size\":0", "", 1)
-							r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
-							reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+atts)
-						}
-
-						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
-
-						log.Printf("%s with status %d", timelog, status)
-						fmt.Printf("%s\n", timelog)
-					} else {
-						fmt.Println("Parms image file and/or Obj transfer missing")
+						atts := strings.Replace(string(att), ",\"type\":\"SIGNONGLASS\"", "", 1)
+						atts = strings.Replace(string(att), ",\"type\":\"\"", "", 1)
+						atts = strings.Replace(atts, ",\"sealed\":true", "", 1)
+						atts = strings.Replace(atts, ",\"sealed\":false", "", 1)
+						atts = strings.Replace(atts, ",\"size\":0", "", 1)
+						r := regexp.MustCompile(`"attachments": *(?s)(.*?)\[(.*?)\]`)
+						reqbody = r.ReplaceAllString(reqbody, "\"attachments\": "+atts)
 					}
+
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+
+					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
-					fmt.Println("freightDocumentId is missing")
-					break StepLoop
+					fmt.Println("Parms image file and/or Obj transfer missing")
 				}
 
 			case step.Action == "submitproofoftransfer":
@@ -1435,19 +1398,14 @@ func main() {
 				fmt.Printf("POST %s with file %s\n", step.Url, step.File)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfdid) > 0 {
-					template, err := ioutil.ReadFile(step.File)
-					check(err)
-					reqbody := strings.TrimSpace(string(template))
-					reqbody = strings.Replace(reqbody, "{{proof}}", challengecode[len(challengecode)-8:len(challengecode)-4], 1)
-					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+				template, err := ioutil.ReadFile(step.File)
+				check(err)
+				reqbody := strings.TrimSpace(string(template))
+				reqbody = strings.Replace(reqbody, "{{proof}}", challengecode[len(challengecode)-8:len(challengecode)-4], 1)
+				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
-					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
-				} else {
-					fmt.Println("freightDocumentId is missing")
-					break StepLoop
-				}
+				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "updatestatus":
 				if len(currentfdid) > 0 {
@@ -1458,25 +1416,20 @@ func main() {
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				if len(currentfdid) > 0 {
-					if len(step.Obj) > 0 {
-						template, err := ioutil.ReadFile(step.File)
-						check(err)
-						reqbody := strings.TrimSpace(string(template))
+				if len(step.Obj) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody := strings.TrimSpace(string(template))
 
-						reqbody = strings.Replace(reqbody, "{{newstatus}}", step.Obj, 1)
-						reqbody = replacePreviousCommits(reqbody, previouscommits)
+					reqbody = strings.Replace(reqbody, "{{newstatus}}", step.Obj, 1)
+					reqbody = replacePreviousCommits(reqbody, previouscommits)
 
-						status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
+					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
-						log.Printf("%s with status %d", timelog, status)
-						fmt.Printf("%s\n", timelog)
-					} else {
-						fmt.Println("Obj newstatus missing")
-					}
+					log.Printf("%s with status %d", timelog, status)
+					fmt.Printf("%s\n", timelog)
 				} else {
-					fmt.Println("freightDocumentId is missing")
-					break StepLoop
+					fmt.Println("Obj newstatus missing")
 				}
 
 			case step.Action == "validatecode":
