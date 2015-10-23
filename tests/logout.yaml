@@ -1,0 +1,22 @@
+steps:
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+    asserts: '{"asserts":[{"status":[200]}]}'
+  - 
+    action: genericget
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments"
+    asserts: '{"asserts":[{"status":[200]}]}'
+  - 
+    action: genericpost
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/oauth/logout"
+    asserts: '{"asserts":[{"status":[204]}]}'
