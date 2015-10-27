@@ -321,7 +321,7 @@ var UNKNOWN = "UNKNOWN"
 // Globals
 
 var host = ""
-var httplog = false
+var httplog = -1
 var clientid = ""
 var clientsecret = ""
 var methods = []string{"POST", "PUT", "PATCH", "DELETE", "HEAD", "GET", "OPTIONS", "TRACE"}
@@ -660,7 +660,7 @@ func login(account Account, refreshtoken string) int {
 	defer resp.Body.Close()
 	resbytes, _ = ioutil.ReadAll(resp.Body)
 	status := resp.StatusCode
-	if httplog {
+	if httplog > 0 {
 		fmt.Println("REQUEST")
 		fmt.Println("POST", "/oauth/token")
 		for k, v := range req.Header {
@@ -688,7 +688,7 @@ func login(account Account, refreshtoken string) int {
 		check(jsonerr)
 		if refreshtoken == "" {
 			url := "/accounts/users/me"
-			status, resbytes, _ = callApi("GET", url, "Bearer "+currentlogin.AccessToken, "", 1)
+			status, resbytes, _ = callApi("GET", url, "Bearer "+currentlogin.AccessToken, "")
 			if status == 200 {
 				jsonerr = json.Unmarshal(resbytes, &currentlogin)
 				check(jsonerr)
@@ -726,7 +726,7 @@ func createAccount(filename string, acc Account) (int, []byte, string) {
 
 func isOnline(host string) bool {
 	url := "/heartbeat"
-	status, resbytes, _ := callApi("GET", url, "", "", 0)
+	status, resbytes, _ := callApi("GET", url, "", "")
 	if status == 200 {
 		jsonerr := json.Unmarshal(resbytes, &build)
 		check(jsonerr)
@@ -739,11 +739,12 @@ func refreshToken() int {
 	return login(*account, currentlogin.RefreshToken)
 }
 
-func callApi(method string, url string, auth string, reqbody string, partlog int) (int, []byte, string) {
+func callApi(method string, url string, auth string, reqbody string) (int, []byte, string) {
 	var resbody = ""
 	var pre = ""
 	var resbytes = []byte(resbody)
 	var reqbytes = []byte(reqbody)
+	var response = []byte(resbody)
 
 	if strings.Contains(host, "localhost") {
 		pre = "http://"
@@ -757,6 +758,7 @@ func callApi(method string, url string, auth string, reqbody string, partlog int
 		req.Header.Set("Authorization", auth)
 	}
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Connection", "keep-alive")
 	if stringInSlice(method, nobody) == false {
 		req.Header.Set("Content-Type", "application/json")
 		if len(reqbody) > 0 {
@@ -777,32 +779,35 @@ func callApi(method string, url string, auth string, reqbody string, partlog int
 		resbytes, _ = ioutil.ReadAll(resp.Body)
 	}
 
-	if httplog {
-		if partlog > 3 {
+	if httplog > -1 {
+		if httplog > 0 {
 			fmt.Println("REQUEST")
 			fmt.Println(method, req.URL)
 			for k, v := range req.Header {
 				fmt.Printf("%s: %v\n", k, v)
 			}
 		}
-		if partlog > 2 {
+		if httplog > 1 {
 			if len(reqbody) > 0 {
 				fmt.Println(" ")
 				fmt.Println(reqbody)
 			}
 		}
-		if partlog > 1 {
+		if httplog > 0 {
 			fmt.Println("RESPONSE")
 			fmt.Println("Status", resp.StatusCode)
 		}
-		if partlog > 0 {
-			response := prettyJson(resbytes)
 
-			if len(response) > 0 {
-				fmt.Println(" ")
-				fmt.Println(string(response))
-			}
+		if httplog > 2 {
+			response = prettyJson(resbytes)
+		} else {
+			response = resbytes
 		}
+		if len(response) > 0 {
+			fmt.Println(" ")
+			fmt.Println(string(response))
+		}
+
 	}
 
 	timelog := fmt.Sprintf("%s %s in %d ms.", method, url, elapsed/time.Millisecond)
@@ -812,7 +817,7 @@ func callApi(method string, url string, auth string, reqbody string, partlog int
 
 func doCall(method string, url string, auth string, reqbody string) (int, []byte, string) {
 	var errors Errs
-	status, resbytes, timelog := callApi(method, url, auth, reqbody, 4)
+	status, resbytes, timelog := callApi(method, url, auth, reqbody)
 
 	if status >= 400 {
 		jsonerr := json.Unmarshal(resbytes, &errors)
@@ -974,7 +979,7 @@ func main() {
 	cfg, err = parseConfigString(cfg_str)
 	check(err)
 
-	httplog, err = cfg.Bool("httplog")
+	httplog, err = cfg.Int("httplog")
 
 	env, err := cfg.Get(environment)
 	check(err)
@@ -1476,9 +1481,12 @@ func main() {
 				fmt.Printf("POST %s with file %s (parms %s subj %s)\n", step.Url, step.File, step.Parms, step.Obj)
 				fmt.Println("-----------------------------------------------------------------")
 
-				template, err := ioutil.ReadFile(step.File)
-				check(err)
-				reqbody := strings.TrimSpace(string(template))
+				var reqbody = ""
+				if len(step.File) > 0 {
+					template, err := ioutil.ReadFile(step.File)
+					check(err)
+					reqbody = strings.TrimSpace(string(template))
+				}
 				if len(currentlogin.AccessToken) > 0 {
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 				} else {
