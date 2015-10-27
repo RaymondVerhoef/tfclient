@@ -621,6 +621,7 @@ func prettyJson(resbytes []byte) []byte {
 
 func login(account Account, refreshtoken string) int {
 	var errors Errs
+	var urlstr = ""
 	if refreshtoken == "" && (account.Name == "" || account.Password == "") {
 		return 800
 	}
@@ -639,9 +640,14 @@ func login(account Account, refreshtoken string) int {
 	var resbody = ""
 	var resbytes = []byte(resbody)
 
-	url := "https://" + host + "/oauth/token"
+	if strings.Contains(host, "localhost") {
+		urlstr = "http://" + host + "/oauth/token"
+	} else {
+		urlstr = "https://" + host + "/oauth/token"
+	}
+
 	auth := basicAuthEnc(clientid, clientsecret)
-	req, err := http.NewRequest("POST", url, bytes.NewBufferString(reqbody.Encode()))
+	req, err := http.NewRequest("POST", urlstr, bytes.NewBufferString(reqbody.Encode()))
 	check(err)
 	req.Header.Set("Authorization", auth)
 	req.Header.Set("Accept", "application/json")
@@ -735,10 +741,16 @@ func refreshToken() int {
 
 func callApi(method string, url string, auth string, reqbody string, partlog int) (int, []byte, string) {
 	var resbody = ""
+	var pre = ""
 	var resbytes = []byte(resbody)
 	var reqbytes = []byte(reqbody)
 
-	req, err := http.NewRequest(method, "https://"+host+url, bytes.NewBuffer(reqbytes))
+	if strings.Contains(host, "localhost") {
+		pre = "http://"
+	} else {
+		pre = "https://"
+	}
+	req, err := http.NewRequest(method, pre+host+url, bytes.NewBuffer(reqbytes))
 	check(err)
 
 	if len(auth) > 0 {
