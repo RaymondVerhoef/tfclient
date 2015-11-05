@@ -724,6 +724,19 @@ func createAccount(filename string, acc Account) (int, []byte, string) {
 	return status, resbytes, timelog
 }
 
+func registerAccount(filename string, acc Account) (int, []byte, string) {
+
+	template, err := ioutil.ReadFile(filename)
+	check(err)
+	cfg_str := strings.TrimSpace(string(template))
+	reqbody := strings.Replace(cfg_str, "{{name}}", acc.Name, -1)
+	reqbody = strings.Replace(reqbody, "{{email}}", acc.Email, -1)
+	reqbody = strings.Replace(reqbody, "{{password}}", acc.Password, -1)
+
+	status, resbytes, timelog := doCall("POST", "/accounts/users/registerbyemail", basicAuthEnc(clientid, clientsecret), reqbody)
+	return status, resbytes, timelog
+}
+
 func isOnline(host string) bool {
 	url := "/heartbeat"
 	status, resbytes, _ := callApi("GET", url, "", "")
@@ -1549,6 +1562,32 @@ func main() {
 					currentaccount = &delcarrier
 				}
 				status, resbytes, timelog = createAccount(step.File, *currentaccount)
+				log.Printf("%s with status %d", timelog, status)
+				fmt.Printf("%s\n", timelog)
+
+			case step.Action == "registerbyemail":
+				fmt.Println("-----------------------------------------------------------------")
+				fmt.Println("Step", i+1)
+				fmt.Printf("Registering account by email %s with file %s\n", step.Obj, step.File)
+				fmt.Println("-----------------------------------------------------------------")
+
+				switch {
+				case step.Obj == "submitter":
+					currentaccount = &submitter
+				case step.Obj == "consignor":
+					currentaccount = &consignor
+				case step.Obj == "consignee":
+					currentaccount = &consignee
+				case step.Obj == "carrier":
+					currentaccount = &carrier
+				case step.Obj == "delconsignor":
+					currentaccount = &delconsignor
+				case step.Obj == "delconsignee":
+					currentaccount = &delconsignee
+				case step.Obj == "delcarrier":
+					currentaccount = &delcarrier
+				}
+				status, resbytes, timelog = registerAccount(step.File, *currentaccount)
 				log.Printf("%s with status %d", timelog, status)
 				fmt.Printf("%s\n", timelog)
 
