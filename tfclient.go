@@ -702,9 +702,10 @@ func login(account Account, refreshtoken string) int {
 		}
 	} else if status >= 400 {
 		jsonerr := json.Unmarshal(resbytes, &errors)
-		check(jsonerr)
-		for _, ers := range errors.Errors {
-			fmt.Println("Error:", ers.Code, ers.Field, ers.Description)
+		if jsonerr == nil {
+			for _, ers := range errors.Errors {
+				fmt.Println("Error:", ers.Code, ers.Field, ers.Description)
+			}
 		}
 	}
 
@@ -834,9 +835,10 @@ func doCall(method string, url string, auth string, reqbody string) (int, []byte
 
 	if status >= 400 {
 		jsonerr := json.Unmarshal(resbytes, &errors)
-		check(jsonerr)
-		for _, ers := range errors.Errors {
-			fmt.Println("Error:", ers.Code, ers.Field, ers.Description)
+		if jsonerr == nil {
+			for _, ers := range errors.Errors {
+				fmt.Println("Error:", ers.Code, ers.Field, ers.Description)
+			}
 		}
 	}
 
