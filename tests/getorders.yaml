@@ -1,0 +1,8 @@
+steps:
+  - 
+    action: genericget
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/orders"
+    asserts: '{"asserts":[{"status":[201, 200]}]}'

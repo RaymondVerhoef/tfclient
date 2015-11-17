@@ -1,0 +1,8 @@
+steps:
+  - 
+    action: genericget
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/"
+    asserts: '{"asserts":[{"status":[403]}]}'    

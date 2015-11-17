@@ -1,0 +1,8 @@
+steps:
+  - 
+    action: getatt
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/attachments/1"
+    asserts: '{"asserts":[{"status":[403]}]}'

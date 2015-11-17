@@ -1,0 +1,68 @@
+
+WITH submittedAccountEmailAddress:
+
+{"buildVersion":"1.36.0-SNAPSHOT"}
+-----------------------------------------------------------------
+Start scenario on localhost:8080/v1 1.36.0-SNAPSHOT
+-----------------------------------------------------------------
+Step 1
+Log in as submitter
+-----------------------------------------------------------------
+
+{"credits":0,"name":"Api Trans-Follow","email":"api@transfollow.nl","accountId":"1","accountNumber":"00000001","phoneNumber":"1234567890"}
+Logged in as submitter api
+-----------------------------------------------------------------
+Step 2
+POST /freightdocuments with file templates/create_fd.json (parms  subj )
+-----------------------------------------------------------------
+
+{"freightDocumentId":"62"}
+new FD at https://localhost:9091/#home,viewFreightDocument&id=62
+POST /freightdocuments in 667 ms. with status 201
+2015/11/17 11:30:01 POST /freightdocuments in 667 ms. with status 201
+-----------------------------------------------------------------
+Step 3
+GET /freightdocuments/62
+-----------------------------------------------------------------
+
+{"freightDocumentId":"62","transFollowNumber":"000000000151","previousCommits":["63"],"references":[{"referenceId":"109","name":"DOCUMENT REFERENCE 1","value":"1"},{"referenceId":"110","name":"DOCUMENT REFERENCE 2","value":"2"}],"type":"WAYBILL","submitterAccountId":"1","submitterName":"Api Trans-Follow","carrierCode":"","agreedDateOfTakingOver":"2015-11-18","estimatedDateTimeOfTakingOver":"2015-11-18T11:30:01Z","estimatedDateTimeOfDelivery":"2015-11-19T11:30:01Z","establishedDate":"2015-11-17","establishedPlace":"Established Place","reimbursementCurrency":"EUR","reimbursementAmount":1.10,"paymentForCarriage":"CARRIAGE_PAID","goods":"Goods","senderInstructions":"Sender Instructions","specialAgreements":"Special Agreements","transportConditions":"AVC2002","attachments":[],"comments":[],"status":"DRAFT","ownPermissions":[{"role":"SUBMITTER","permissions":["DELEGATE","VIEW_SEALED_ATTACHMENT","UPDATE","VIEW"]}],"lastModifiedDateTime":"2015-11-17T10:30:01.522Z","approvals":[],"updates":[],"deliveryDate":null,"consignor":{"roleId":"360","name":"V. Erzender","streetName":"Verzenderstraat","buildingNumber":"1","postalCode":"1234AA","postalBox":"1234","cityName":"Nootdorp","countryName":"Netherlands","countryCode":"NLD","contactName":"C. Onsignor","contactNote":"Notitie voor consignor contact","contactEmailAddress":"frankmob+contact_consignor@gmail.com","contactPhoneNumber":"0123456789","accountId":null,"submittedAccountNumber":"","submittedAccountEmailAddress":"frankmob+consignor@gmail.com"},"consignee":{"roleId":"359","name":"O. Ntvanger","streetName":"Ontvangerstraat","buildingNumber":"2","postalCode":"5678AA","postalBox":"5678","cityName":"Utrecht","countryName":"Netherlands","countryCode":"NLD","contactName":"C Onsignee","contactNote":"Notitie voor consignee contact","contactEmailAddress":"frankmob+consignee_contact@gmail.com","contactPhoneNumber":"0987654321","accountId":null,"submittedAccountNumber":"","submittedAccountEmailAddress":"frankmob+consignee@gmail.com"},"placeOfDelivery":null,"placeOfTakingOver":null,"carrier":{"roleId":"361","name":"V. Ervoerder","streetName":"Vervoerderdreef","buildingNumber":"3","postalCode":"9012AA","postalBox":"9012","cityName":"Wijk bij Duurstede","countryName":"Netherlands","countryCode":"NLD","contactName":"C. Arrier","contactNote":"Notitie voor carrier contact","contactEmailAddress":"frankmob+carrier_contact@gmail.com","contactPhoneNumber":"0123443212","accountId":null,"submittedAccountNumber":"","submittedAccountEmailAddress":"frankmob+carrier@gmail.com"},"subsequentCarriers":[]}
+FD 62 with PC [63]
+GET /freightdocuments/62 in 124 ms. with status 200
+2015/11/17 11:30:01 GET /freightdocuments/62 in 124 ms. with status 200
+-----------------------------------------------------------------
+End scenario
+
+
+
+WITHOUT submittedAccountEmailAddress:
+
+{"buildVersion":"1.36.0-SNAPSHOT"}
+-----------------------------------------------------------------
+Start scenario on localhost:8080/v1 1.36.0-SNAPSHOT
+-----------------------------------------------------------------
+Step 1
+Log in as submitter
+-----------------------------------------------------------------
+
+{"credits":0,"name":"Api Trans-Follow","email":"api@transfollow.nl","accountId":"1","accountNumber":"00000001","phoneNumber":"1234567890"}
+Logged in as submitter api
+-----------------------------------------------------------------
+Step 2
+POST /freightdocuments with file create_fd.json (parms  subj )
+-----------------------------------------------------------------
+
+{"freightDocumentId":"64"}
+new FD at https://localhost:9091/#home,viewFreightDocument&id=64
+POST /freightdocuments in 64 ms. with status 201
+2015/11/17 11:35:44 POST /freightdocuments in 64 ms. with status 201
+-----------------------------------------------------------------
+Step 3
+GET /freightdocuments/64
+-----------------------------------------------------------------
+
+{"freightDocumentId":"64","transFollowNumber":"000000000153","previousCommits":["65"],"references":[{"referenceId":"113","name":"DOCUMENT REFERENCE 1","value":"1"},{"referenceId":"114","name":"DOCUMENT REFERENCE 2","value":"2"}],"type":"WAYBILL","submitterAccountId":"1","submitterName":"Api Trans-Follow","carrierCode":"","agreedDateOfTakingOver":"2015-11-18","estimatedDateTimeOfTakingOver":"2015-11-18T11:35:44Z","estimatedDateTimeOfDelivery":"2015-11-19T11:35:44Z","establishedDate":"2015-11-17","establishedPlace":"Established Place","reimbursementCurrency":"EUR","reimbursementAmount":1.10,"paymentForCarriage":"CARRIAGE_PAID","goods":"Goods","senderInstructions":"Sender Instructions","specialAgreements":"Special Agreements","transportConditions":"AVC2002","attachments":[],"comments":[],"status":"DRAFT","ownPermissions":[{"role":"SUBMITTER","permissions":["DELEGATE","VIEW_SEALED_ATTACHMENT","UPDATE","VIEW"]}],"lastModifiedDateTime":"2015-11-17T10:35:44.643Z","approvals":[],"updates":[],"deliveryDate":null,"consignor":{"roleId":"368","name":"V. Erzender","streetName":"Verzenderstraat","buildingNumber":"1","postalCode":"1234AA","postalBox":"1234","cityName":"Nootdorp","countryName":"Netherlands","countryCode":"NLD","contactName":"C. Onsignor","contactNote":"Notitie voor consignor contact","contactEmailAddress":"frankmob+contact_consignor@gmail.com","contactPhoneNumber":"0123456789","accountId":null,"submittedAccountNumber":"","submittedAccountEmailAddress":"frankmob+consignor@gmail.com"},"consignee":{"roleId":"367","name":"O. Ntvanger","streetName":"Ontvangerstraat","buildingNumber":"2","postalCode":"5678AA","postalBox":"5678","cityName":"Utrecht","countryName":"Netherlands","countryCode":"NLD","contactName":"C Onsignee","contactNote":"Notitie voor consignee contact","contactEmailAddress":"frankmob+consignee_contact@gmail.com","contactPhoneNumber":"0987654321","accountId":null,"submittedAccountNumber":"","submittedAccountEmailAddress":"frankmob+consignee@gmail.com"},"placeOfDelivery":null,"placeOfTakingOver":null,"carrier":{"roleId":"369","name":"V. Ervoerder","streetName":"","buildingNumber":"","postalCode":"","postalBox":"","cityName":"","countryName":"","countryCode":"","contactName":"","contactNote":"","contactEmailAddress":"","contactPhoneNumber":"","accountId":null,"submittedAccountNumber":"","submittedAccountEmailAddress":""},"subsequentCarriers":[]}
+FD 64 with PC [65]
+GET /freightdocuments/64 in 36 ms. with status 200
+2015/11/17 11:35:44 GET /freightdocuments/64 in 36 ms. with status 200
+-----------------------------------------------------------------
+End scenario

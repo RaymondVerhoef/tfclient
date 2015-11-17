@@ -1,0 +1,254 @@
+steps:
+  - 
+    action: genericget
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/conditions/avc2002"
+  - 
+    action: genericpost
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/conditions/avc2002"
+  - 
+    action: genericget
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/accounts/users/registerbyemail"
+  - 
+    action: registerbyemail
+    file: "templates/registerbyemail.json"
+    obj: "submitter"
+    parms: ""
+    url: ""
+  - 
+    action: genericpost
+    file: "templates/password_reset.json"
+    obj: ""
+    parms: ""
+    url: "/accounts/password/reset"    
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+  - 
+    action: genericget
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/accounts/users/me"    
+  - 
+    action: genericget
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/orders"
+  - 
+    action: genericpost
+    file: "templates/create_order.json"
+    obj: ""
+    parms: ""
+    url: "/orders"
+  - 
+    action: createfd
+    file: "templates/create_fd.json"
+    obj: ""
+    parms: ""
+    url: "/freightdocuments"   
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+  - 
+    action: genericpost
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/oauth/logout"
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+  - 
+    action: createfd
+    file: "templates/create_fd.json"
+    obj: ""
+    parms: ""
+    url: "/freightdocuments"   
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+  - 
+    action: issuefd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}/issue"   
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: "" 
+  - 
+    action: createcomment
+    file: templates/create_comment.json
+    obj: ""
+    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"",
+      "content":"","type":"REMARKS","sealed":false}]}'
+    url: /freightdocuments/{{id}}/comments
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+  - 
+    action: generatechallengecode
+    file: ""
+    obj: ""
+    parms: CONSIGNOR_TO_CARRIER
+    url: "" 
+  - 
+    action: login
+    file: ""
+    obj: consignor
+    parms: ""
+    url: ""
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}" 
+  - 
+    action: delegatefd
+    file: templates/delegate_fd.json
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}/delegate"
+  - 
+    action: delegatefd
+    file: templates/delegate_fd.json
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}/revoke"    
+  - 
+    action: generateresponsecode
+    file: ""
+    obj: ""
+    parms: CONSIGNOR_TO_CARRIER
+    url: ""     
+  - 
+    action: validatecode
+    file: templates/validatecode.json
+    obj: COLLECTION
+    parms: CHALLENGE
+    url: "/freightdocuments/{{id}}/validatechallengecode"
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: ""
+  - 
+    action: submitcounterpartyapprovaltfa
+    file: templates/counterpartyapprovaltfa.json
+    obj: COLLECTION
+    parms: ""
+    url: "/freightdocuments/{{id}}/submitcounterpartyapprovaltfa"
+  - 
+    action: validatecode
+    file: templates/validatecode.json
+    obj: COLLECTION
+    parms: RESPONSE
+    url: "/freightdocuments/{{id}}/validateresponsecode" 
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"     
+  - 
+    action: submitmyapproval
+    file: templates/ownapproval.json
+    obj: COLLECTION
+    parms: CARRIER
+    url: "/freightdocuments/{{id}}/submitmyapproval"
+  - 
+    action: updatestatus
+    file: templates/statusupdate.json
+    obj: TRANSIT
+    parms: ""
+    url: "/freightdocuments/{{id}}/updatestatus"    
+  - 
+    action: login
+    file: ""
+    obj: consignor
+    parms: ""
+    url: ""
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"     
+  - 
+    action: submitproofoftransfer
+    file: templates/proofoftransfer.json
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}/submitproofoftransfer" 
+  - 
+    action: login
+    file: ""
+    obj: carrier
+    parms: ""
+    url: "" 
+  - 
+    action: createcomment
+    file: templates/create_comment.json
+    obj: ""
+    parms: '{"attachments":[{"name":"attachments/img2.png","originalFileName":"","content":"","type":"REMARKS","sealed":false}]}'
+    url: /freightdocuments/{{id}}/comments
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"
+  - 
+    action: submitcounterpartyapprovalsog
+    file: templates/counterpartyapprovalsog.json
+    obj: DELIVERY
+    parms: '{"attachments":[{"name":"attachments/signature.jpg","originalFileName":"","content":""}]}'
+    url: "/freightdocuments/{{id}}/submitcounterpartyapprovalsignonglass" 
+  - 
+    action: submitmyapproval
+    file: templates/ownapproval.json
+    obj: DELIVERY
+    parms: CARRIER
+    url: "/freightdocuments/{{id}}/submitmyapproval"
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/{{id}}"     
+  - 
+    action: updatestatus
+    file: templates/statusupdate.json
+    obj: DELIVERED
+    parms: ""
+    url: "/freightdocuments/{{id}}/updatestatus"                            

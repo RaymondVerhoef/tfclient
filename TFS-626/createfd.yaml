@@ -1,0 +1,25 @@
+steps:
+  - 
+    action: login
+    file: ""
+    obj: submitter
+    parms: ""
+    url: ""
+ - 
+    action: createfd
+    file: create_fd.json
+    obj: ""
+    parms: '{"attachments":[{"name":"0.25MB.JPG","originalFileName":"","content":"","type":"GENERAL","sealed":false}]}'
+    url: "/freightdocuments
+  - 
+    action: getfd
+    file: ""
+    obj: ""
+    parms: ""
+    url: "/freightdocuments/65" 
+  - 
+    action: updatefd
+    file: update_fd.json
+    obj: ""
+    parms: '{"attachments":[{"name":"0.25MB.JPG","originalFileName":"","content":"","type":"GENERAL","sealed":false}]}'
+    url: "/freightdocuments/65"

@@ -1,0 +1,8 @@
+steps:
+  - 
+    action: registerbyemail
+    file: templates/registerbyemail.json
+    obj: submitter
+    parms: ""
+    url: ""
+    asserts: '{"asserts":[{"status":[201, 200]}]}'

@@ -714,6 +714,7 @@ func login(account Account, refreshtoken string) int {
 
 func createAccount(filename string, acc Account) (int, []byte, string) {
 
+	urlstr := ""
 	template, err := ioutil.ReadFile(filename)
 	check(err)
 	cfg_str := strings.TrimSpace(string(template))
@@ -721,7 +722,12 @@ func createAccount(filename string, acc Account) (int, []byte, string) {
 	reqbody = strings.Replace(reqbody, "{{email}}", acc.Email, -1)
 	reqbody = strings.Replace(reqbody, "{{password}}", acc.Password, -1)
 
-	status, resbytes, timelog := doCall("POST", "/accounts/users", basicAuthEnc(clientid, clientsecret), reqbody)
+	if strings.Contains(host, "localhost") {
+		urlstr = "http://" + host + "/test/accounts/users"
+	} else {
+		urlstr = "https://" + host + "/accounts/users"
+	}
+	status, resbytes, timelog := doCall("POST", urlstr, basicAuthEnc(clientid, clientsecret), reqbody)
 	return status, resbytes, timelog
 }
 
@@ -1059,6 +1065,7 @@ func main() {
 				} else {
 					status, resbytes, timelog = doCall("GET", step.Url, "", "")
 				}
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "validateemailtoken":
@@ -1073,8 +1080,8 @@ func main() {
 				if len(step.Parms) > 0 {
 					status, resbytes, timelog = doCall("GET", step.Url, "", "")
 
+					fmt.Printf("%s with status %d\n", timelog, status)
 					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("email token missing")
 				}
@@ -1099,8 +1106,8 @@ func main() {
 						fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
 					}
 				}
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "getfdatt" || step.Action == "getatt":
 				if len(currentfdid) > 0 {
@@ -1122,8 +1129,8 @@ func main() {
 
 					fmt.Printf("FD %s with Att %s\n", currentfdid, currentattid)
 				}
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "getfdresponsecode":
 				if len(currentfdid) > 0 {
@@ -1148,6 +1155,7 @@ func main() {
 						fmt.Printf("FD %s with PC %s\n", currentfdid, previouscommits)
 					}
 				}
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
 
 			case step.Action == "issuefd":
@@ -1160,8 +1168,8 @@ func main() {
 				fmt.Println("-----------------------------------------------------------------")
 
 				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, "")
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "createfd":
 				fmt.Println("-----------------------------------------------------------------")
@@ -1202,8 +1210,8 @@ func main() {
 							fmt.Printf("new FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfdid)
 						}
 					}
+					fmt.Printf("%s with status %d\n", timelog, status)
 					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("New freightDocument content is missing")
 					break StepLoop
@@ -1255,8 +1263,8 @@ func main() {
 							fmt.Printf("changed FD at https://%s/#home,viewFreightDocument&id=%s\n", portal, currentfdid)
 						}
 					}
+					fmt.Printf("%s with status %d\n", timelog, status)
 					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("Updated freightDocument content is missing")
 					break StepLoop
@@ -1277,8 +1285,8 @@ func main() {
 
 				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "createcomment":
 				var attachments []Attachment
@@ -1306,8 +1314,8 @@ func main() {
 				}
 				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "submitmyapproval":
 				if len(currentfdid) > 0 {
@@ -1328,8 +1336,8 @@ func main() {
 
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
+					fmt.Printf("%s with status %d\n", timelog, status)
 					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("Parms role and/or Obj transfer missing")
 				}
@@ -1376,8 +1384,8 @@ func main() {
 
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
+					fmt.Printf("%s with status %d\n", timelog, status)
 					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("Obj transfer missing")
 				}
@@ -1415,8 +1423,8 @@ func main() {
 
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
+					fmt.Printf("%s with status %d\n", timelog, status)
 					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
 				} else {
 					fmt.Println("Parms image file and/or Obj transfer missing")
 				}
@@ -1436,8 +1444,8 @@ func main() {
 				reqbody = strings.Replace(reqbody, "{{proof}}", challengecode[len(challengecode)-8:len(challengecode)-4], 1)
 				status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "updatestatus":
 				if len(currentfdid) > 0 {
@@ -1457,9 +1465,9 @@ func main() {
 					reqbody = replacePreviousCommits(reqbody, previouscommits)
 
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
-
+					fmt.Printf("%s with status %d\n", timelog, status)
 					log.Printf("%s with status %d", timelog, status)
-					fmt.Printf("%s\n", timelog)
+
 				} else {
 					fmt.Println("Obj newstatus missing")
 				}
@@ -1486,8 +1494,8 @@ func main() {
 				if len(currentlogin.AccessToken) > 0 {
 					status, resbytes, timelog = doCall("POST", step.Url, "Bearer "+currentlogin.AccessToken, reqbody)
 				}
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "genericpost":
 
@@ -1507,8 +1515,8 @@ func main() {
 				} else {
 					status, resbytes, timelog = doCall("POST", step.Url, "", reqbody)
 				}
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "login":
 				fmt.Println("-----------------------------------------------------------------")
@@ -1564,8 +1572,8 @@ func main() {
 					currentaccount = &delcarrier
 				}
 				status, resbytes, timelog = createAccount(step.File, *currentaccount)
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			case step.Action == "registerbyemail":
 				fmt.Println("-----------------------------------------------------------------")
@@ -1590,8 +1598,8 @@ func main() {
 					currentaccount = &delcarrier
 				}
 				status, resbytes, timelog = registerAccount(step.File, *currentaccount)
+				fmt.Printf("%s with status %d\n", timelog, status)
 				log.Printf("%s with status %d", timelog, status)
-				fmt.Printf("%s\n", timelog)
 
 			default:
 				fmt.Println("-----------------------------------------------------------------")

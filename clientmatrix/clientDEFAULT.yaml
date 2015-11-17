@@ -1,0 +1,71 @@
+httplog: true
+test: 
+  api: 
+    host: "test.transfollow.com/v1/api"
+  portal: 
+    host: "test.transfollow.com/portal"
+  client: 
+    id: AADEFAULT12a4b7fc-99d8-4df2-a710-63c2420c2fe9
+    secret: 7cb91494-5b30-4c69-b4e6-4fe35023b934
+acceptance: 
+  api: 
+    host: "acceptance.transfollow.com/v1/api"
+  portal: 
+    host: "acceptance.transfollow.com/portal"
+  client: 
+    id: trusted-client
+    secret: somesecret
+partner: 
+  api: 
+    host: "partner.transfollow.com/v1/api"
+  portal: 
+    host: "partner.transfollow.com/portal"
+  client: 
+    id: trusted-client
+    secret: somesecret
+local: 
+  api: 
+    host: "localhost:8080/v1"
+  portal: 
+    host: "localhost:9091"
+  client: 
+    id: defaultcl
+    secret: somesecret
+accounts: 
+  submitter: 
+    name: "submitter api"
+    email: "api@transfollow.nl"
+    password: "api-password"
+  consignor: 
+    name: "consignor"
+    email: "api@transfollow.nl"
+    password: "api-password"
+  consignee: 
+    name: "consignee"
+    email: "api@transfollow.nl"
+    password: "api-password"
+  carrier: 
+    name: "carrier"
+    email: "api@transfollow.nl"
+    password: "api-password"
+  delegate_consignor: 
+    name: "delegate_consignor"
+    email: "frankmob+delegate_consignor@gmail.com"
+    password: "password"
+  delegate_consignee: 
+    name: "delegate_consignee"
+    email: "frankmob+delegate_consignee@gmail.com"
+    password: "password"
+  delegate_carrier: 
+    name: "delegate_carrier"
+    email: "frankmob+delegate_carrier@gmail.com"
+    password: "password"
+  subsequent_carriers: 
+    - 
+      name: "subsequent_carrier_1"
+      email: "frankmob+subsequent_carrier_1@gmail.com"
+      password: "password"
+    - 
+      name: "subsequent_carrier_2"
+      email: "frankmob+subsequent_carrier_2@gmail.com"
+      password: "password"
