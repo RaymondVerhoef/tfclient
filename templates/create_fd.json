@@ -21,10 +21,10 @@
     "countryCode": "NLD",
     "contactName": "C. Onsignor",
     "contactNote": "Notitie voor consignor contact",
-    "contactEmailAddress": "frankmob+contact_consignor@gmail.com",
+    "contactEmailAddress": "tfdevops+contact_consignor@gmail.com",
     "contactPhoneNumber": "0123456789",
     "submittedAccountNumber": "",
-    "submittedAccountEmailAddress": "frankmob+consignor@gmail.com"
+    "submittedAccountEmailAddress": "tfdevops+afzender@gmail.com"
   },
   "consignee": {
     "name": "O. Ntvanger",
@@ -37,10 +37,10 @@
     "countryCode": "NLD",
     "contactName": "C Onsignee",
     "contactNote": "Notitie voor consignee contact",
-    "contactEmailAddress": "frankmob+consignee_contact@gmail.com",
+    "contactEmailAddress": "tfdevops+consignee_contact@gmail.com",
     "contactPhoneNumber": "0987654321",
     "submittedAccountNumber": "",
-    "submittedAccountEmailAddress": "frankmob+consignee@gmail.com"
+    "submittedAccountEmailAddress": "tfdevops+ontvanger@gmail.com"
   },
   "carrier": {
     "name": "V. Ervoerder",
@@ -53,10 +53,10 @@
     "countryCode": "NLD",
     "contactName": "C. Arrier",
     "contactNote": "Notitie voor carrier contact",
-    "contactEmailAddress": "frankmob+carrier_contact@gmail.com",
+    "contactEmailAddress": "tfdevops+carrier_contact@gmail.com",
     "contactPhoneNumber": "0123443212",
     "submittedAccountNumber": "",
-    "submittedAccountEmailAddress": "frankmob+carrier@gmail.com"
+    "submittedAccountEmailAddress": "tfdevops+vervoerder@gmail.com"
   },
   "subsequentCarriers": [
   ],
